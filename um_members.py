@@ -1,8 +1,5 @@
 import sqlite3
 
-# TODO: QUESTIONS
-#   1. Deliverable, why do we need to call the file, um_members.pdf and um_members.py (what is um)
-
 # IMPORTANT:
 #   all the code below is just purely for showing a bit around sql lite.
 #   its super duper beta and pretty much everything has to change. 
