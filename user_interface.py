@@ -36,9 +36,9 @@ def print_colored(text, color):
 def single_select(title: str, options: list[str], allow_back: bool = True, toast: tuple[str,str] = None) -> int:
     max_per_page = 9
     page = 0
+    total_pages = (len(options) + (max_per_page-1)) // max_per_page 
 
-    while True:
-        total_pages = (len(options) + (max_per_page-1)) // max_per_page 
+    while True:    
         start_index = page * max_per_page
         end_index = min(start_index + max_per_page, len(options))
 
