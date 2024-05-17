@@ -6,6 +6,7 @@ So like... why do we get all this stuff about http requests in the lessons when 
 In other words, since there is no front/back-end, its all just 1 big block of code. meaning that there is not really 2 shells of validation (front and back). 
 so validation that we give to the user will also automaticly become the backend validation
 2. clearing the console. are we allowed to do that using `os.system('cls' if os.name == 'nt' else 'clear')`
+3. are we allowed to use the atexit decorator `import atexit` and `@atexit.register` above a method which ensure that it will ALWAYS run whn the code terminates. no matter what
 
 ## Important stuff
 ¯\\(°_o)/¯
