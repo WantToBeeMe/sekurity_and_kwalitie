@@ -1,6 +1,7 @@
 import sqlite3
 from user_interface import single_select
 
+
 # IMPORTANT:
 #   all the code below is just purely for showing a bit around sql lite.
 #   its super duper beta and pretty much everything has to change. 
@@ -30,11 +31,13 @@ def main() -> None:
         if users:
             for user in users:
                 print(f"ID: {user[0]}, Username: {user[1]}, Password: {user[2]}")
-        else:  print("No users found.")
+        else:
+            print("No users found.")
 
     def delete_user():
         user_id = input("Enter the ID of the user to delete: ")
-        c.execute("DELETE FROM users WHERE id=?", (user_id,)) # the comma is required for single values in a tuple. leave it
+        c.execute("DELETE FROM users WHERE id=?",
+                  (user_id,))  # the comma is required for single values in a tuple. leave it
         db.commit()
         print("User deleted successfully!")
 
@@ -51,17 +54,23 @@ def main() -> None:
             view_users()
         elif choice == 2:
             delete_user()
-        
+
     db.close()
 
+
 def single_select_test():
-    options =  ["a","b","c","d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"]
+    options = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"]
     choice = single_select(
-            "User Management System",options, True, 
-            ("want to test the sql stuff, go the the last line of um_mebers and switch the comment there, \n this is just a single_select test", 'yellow'))
-    if choice == -1: print("you chose: Back")
-    else: print(f"you chose: {options[choice]}")
-    
+        "User Management System", options, True,
+        (
+            "want to test the sql stuff, go the the last line of um_members and switch the comment there, \n this is "
+            "just a single_select test",
+            'yellow'))
+    if choice == -1:
+        print("you chose: Back")
+    else:
+        print(f"you chose: {options[choice]}")
+
 
 if __name__ == "__main__":
     single_select_test()
