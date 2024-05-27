@@ -61,9 +61,15 @@ def login() -> None:
 
 def daily_business() -> None:
     global current_user
-    options = ["Exit"]
+    options = ["Create new user", "Exit"]
     option_index = single_select("Main Menu", options, allow_back=False)
     if option_index == 0:
+        current_user = None
+        set_toast("damm, i did not implement that ... sorry", "yellow")
+        clear_terminal()
+        time.sleep(1)
+        set_toast("Welcome to the Unique Meal App!", "green")
+    elif option_index == 1:
         current_user = None
         set_toast("Goodbye!", "yellow")
         clear_terminal()
