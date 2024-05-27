@@ -1,77 +1,81 @@
 import sqlite3
-from user_interface import single_select
-
+import time
+from user_interface import single_select, password_input, set_toast, clear_terminal
 
 # IMPORTANT:
 #   all the code below is just purely for showing a bit around sql lite.
 #   its super duper beta and pretty much everything has to change. 
 
-def setup_database() -> tuple[sqlite3.Connection, sqlite3.Cursor]:
-    db = sqlite3.connect('mydatabase.db')
+db: sqlite3.Connection = None
+c: sqlite3.Cursor = None
+current_user: tuple[int, str, str] = None  # (id, username, password)
+
+
+def setup_database() -> None:
+    global db, c
+    db = sqlite3.connect('unique_meal.db')
     c = db.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)''')
 
-    return db, c
+    # Check if the users table is empty
+    c.execute("SELECT COUNT(*) FROM users")
+    count = c.fetchone()[0]
+
+    # If the users table is empty, insert a hardcoded initial user
+    if count == 0:
+        initial_username = "admin"
+        initial_password = "test"
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (initial_username, initial_password))
+        db.commit()
 
 
 def main() -> None:
-    db, c = setup_database()
+    global db, c
+    setup_database()
 
-    def create_user():
-        username = input("Enter username: ")
-        password = input("Enter password: ")
-        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
-        db.commit()
-        print("User created successfully!")
-
-    def view_users():
-        c.execute("SELECT * FROM users")
-        users = c.fetchall()
-        if users:
-            for user in users:
-                print(f"ID: {user[0]}, Username: {user[1]}, Password: {user[2]}")
-        else:
-            print("No users found.")
-
-    def delete_user():
-        user_id = input("Enter the ID of the user to delete: ")
-        c.execute("DELETE FROM users WHERE id=?",
-                  (user_id,))  # the comma is required for single values in a tuple. leave it
-        db.commit()
-        print("User deleted successfully!")
-
+    set_toast("Welcome to the Unique Meal App!", "green")
     while True:
-        options = ["Create User", "View Users", "Delete User"]
-        choice = single_select("User Management System", options)
+        clear_terminal()
 
-        if choice == -1:
-            break
-
-        if choice == 0:
-            create_user()
-        elif choice == 1:
-            view_users()
-        elif choice == 2:
-            delete_user()
-
-    db.close()
+        if not current_user:
+            login()
+        else:
+            daily_business()
 
 
-def single_select_test():
-    options = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"]
-    choice = single_select(
-        "User Management System", options, True,
-        (
-            "want to test the sql stuff, go the the last line of um_members and switch the comment there, \n this is "
-            "just a single_select test",
-            'yellow'))
-    if choice == -1:
-        print("you chose: Back")
+def login() -> None:
+    global current_user
+    username = input("Username: ")
+    password = password_input("Password: ")
+    c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+    user = c.fetchone()
+    time.sleep(0.2)
+
+    if user:
+        current_user = user
+        set_toast(f"Welcome {current_user[1]}!", "green")
     else:
-        print(f"you chose: {options[choice]}")
+        set_toast("Invalid username or password!", "red")
+
+
+def daily_business() -> None:
+    global current_user
+    options = ["Exit"]
+    option_index = single_select("Main Menu", options, allow_back=False)
+    if option_index == 0:
+        current_user = None
+        set_toast("Goodbye!", "yellow")
+        clear_terminal()
+        time.sleep(1)
+        set_toast("Welcome to the Unique Meal App!", "green")
 
 
 if __name__ == "__main__":
-    single_select_test()
-    # main()
+    try:
+        main()
+    finally:
+        # ensure that the database connection is always closed
+        # even if an exception occurs
+        if db:
+            db.close()
