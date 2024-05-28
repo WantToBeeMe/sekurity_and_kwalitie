@@ -4,13 +4,8 @@ import sys  # all usages -> reading single key press ; writing stdout ; flushing
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script.")
 
-# note that you can change these booleans to False or True to hardcode the value. however, from my experience,
-# I have only encountered trouble with PyCharms run terminal (regarding the clear terminal and password field)
-#    (since PyCharms uses a virtual terminal. so he's not like the other kids)
 COLOR_ENABLED = True
-CLEAR_TERMINAL_ENABLED = not ("PYCHARM_HOSTED" in os.environ or "PYCHARM" in os.environ)
-PASSWORD_HIDDEN_ENABLED = not ("PYCHARM_HOSTED" in os.environ or "PYCHARM" in os.environ)
-# disable only PyCharm ->  not ("PYCHARM_HOSTED" in os.environ or "PYCHARM" in os.environ)
+CLEAR_TERMINAL_ENABLED = True
 
 
 toast: tuple[str, str] = ("", 'white')
@@ -40,14 +35,10 @@ def print_colored(text, color, only_if_color: bool = False) -> None:
         return
 
     color_codes = {
-        'gray': '\033[90m',
-        'red': '\033[91m',
-        'green': '\033[92m',
-        'yellow': '\033[93m',
-        'blue': '\033[94m',
-        'magenta': '\033[95m',
-        'cyan': '\033[96m',
-        'white': '\033[97m'
+        'gray': '\033[90m',      'red': '\033[91m',
+        'green': '\033[92m',     'yellow': '\033[93m',
+        'blue': '\033[94m',      'magenta': '\033[95m',
+        'cyan': '\033[96m',      'white': '\033[97m'
     }
 
     color_code = color_codes.get(color.lower(), '')
@@ -151,8 +142,9 @@ def password_input(prompt: str) -> str:
     :param prompt: the prompt to display to the user
     :return: the password that the user entered
     """
-    if not PASSWORD_HIDDEN_ENABLED:
-        return input(prompt)
+    # if "PYCHARM_HOSTED" in os.environ or "PYCHARM" in os.environ:
+    #     # if you are in PyCharm virtual terminal, we can't use the hide password feature
+    #     return input(prompt)
 
     def read_single_keypress():
         if os.name == 'nt':

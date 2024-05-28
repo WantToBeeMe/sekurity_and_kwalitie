@@ -1,13 +1,9 @@
 import sqlite3
 import time
-from user_interface import single_select, password_input, set_toast, clear_terminal
-from classes import *
-from user_validation import *
-from sanitize import hash_password
-
-# IMPORTANT:
-#   all the code below is just purely for showing a bit around sql lite.
-#   its super duper beta and pretty much everything has to change.
+from unique_meal.user_interface import single_select, password_input, set_toast, clear_terminal
+from unique_meal.classes import *
+from unique_meal.user_validation import *
+from unique_meal.sanitize import hash_password
 
 db: sqlite3.Connection = None
 c: sqlite3.Cursor = None
@@ -35,7 +31,8 @@ def setup_database() -> None:
     if count == 0:
         initial_username = "super_admin"
         initial_password = hash_password("Admin_123?")
-        c.execute("INSERT INTO users (username, password, type) VALUES (?, ?, ?)", (initial_username, initial_password, SUPER_ADMIN))
+        c.execute("INSERT INTO users (username, password, type) VALUES (?, ?, ?)",
+                  (initial_username, initial_password, SUPER_ADMIN))
         db.commit()
 
 
@@ -96,8 +93,12 @@ def view_all_users() -> None:
     users = [User(*user) for user in c.fetchall()]
 
     clear_terminal()
-    single_select("All Users - (Username, Full Name, Type)",
-                  [f"{user.username} ({user.first_name} {user.last_name}) {user.type == CONSULTANT and 'Consultant' or user.type == ADMIN and 'Admin' or 'Super Admin'}" for user in users])
+    options = [
+        f"{user.username} ({user.first_name} {user.last_name}) "
+        f"{'Consultant' if user.type == CONSULTANT else 'Admin' if user.type == ADMIN else 'Super Admin'}"
+        for user in users
+    ]
+    single_select("All Users - (Username, Full Name, Type)", options)
 
 
 def register_new_consultant() -> None:
@@ -107,8 +108,9 @@ def register_new_consultant() -> None:
     username = input("Username: ")
     password = password_input("Password: ")
 
-    if not is_valid_name(first_name) or not is_valid_name(last_name) or not is_valid_username(username) or not is_valid_password(password):
-        set_toast("Invalid input!", "red")
+    if not all([is_valid_name(first_name), is_valid_name(last_name),
+                is_valid_username(username), is_valid_password(password)]):
+        set_toast(get_recorded_error(), "red")
         return
 
     c.execute("SELECT * FROM users WHERE username=?", (username,))
@@ -118,14 +120,33 @@ def register_new_consultant() -> None:
         set_toast("Username already exists!", "red")
         return
 
-    c.execute("INSERT INTO users (username, password, type, first_name, last_name, registration_date) VALUES (?, ?, ?, ?, ?, ?)",
-              (username, hash_password(password), CONSULTANT, first_name, last_name, time.strftime("%Y-%m-%d")))
+    c.execute(
+        """
+        INSERT INTO users (username, password, type, first_name, last_name, registration_date)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            username,
+            hash_password(password),
+            CONSULTANT,
+            first_name,
+            last_name,
+            time.strftime("%Y-%m-%d")
+        )
+    )
     db.commit()
 
     set_toast("Consultant registered successfully!", "green")
 
 
 if __name__ == "__main__":
+    import os  # os is only used in this if statement
+    if "PYCHARM_HOSTED" in os.environ or "PYCHARM" in os.environ:
+        print("This program is not intended to be run in PyCharm's terminal. \n"
+              "Using this terminal could open up security vulnerabilities. \n"
+              "Please run it in your system's terminal.")
+        exit(1)
+
     try:
         main()
     finally:
