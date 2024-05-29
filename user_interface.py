@@ -2,7 +2,7 @@ import os  # all usages -> checking name of os ; clearing console ; checking if 
 import sys  # all usages -> reading single key press ; writing stdout ; flushing stdout
 
 if __name__ == "__main__":
-    raise SystemExit("This file is not meant to be run directly. Please run the main script.")
+    raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
 
 COLOR_ENABLED = True
 CLEAR_TERMINAL_ENABLED = True
@@ -58,7 +58,7 @@ def clear_terminal() -> None:
         print("\n" * 5)
 
     print("=====================================")
-    print_colored(toast[0], toast[1])
+    print_colored(*toast)
     print("=====================================")
 
 
