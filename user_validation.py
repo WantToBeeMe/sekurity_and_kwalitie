@@ -2,15 +2,11 @@ import random
 from datetime import datetime
 
 # TODO: This `last_recorded_error` is not definitive ofcourse.
-#   There are other errors like "user already exists" that we also want to show
-#   However, we need to ask them if something like this is worth to implement (for example in the logger somewhere)
-#   Since you want to obviously show the user the error message, so they at least know what they are doing wrong.
-#   #
-#   This implementation assumes that every error updates the last recorded error.
+#   This implementation assumes that every error updates the last_recorded_error.
 #   But if for some reason we as developers forget that, then it will show the previous error message,
 #   which is a vulnerability. So a better implementation would be to have a Validator class, `validator = Validator()`
 #   and be able to call `validator.validate_username(username)` and then you can do `validator.get_last_error()`
-#   This way if we forget to put an error, then there will just be no error message,  which is just dumb, but not a vulnerability.
+#   This way if we forget to set an error, then it will just return "" ,  which is just dumb, but not a vulnerability.
 
 
 last_recorded_error = ""

@@ -1,9 +1,9 @@
 import sqlite3
 import time
-from unique_meal.user_interface import single_select, password_input, set_toast, clear_terminal
-from unique_meal.classes import *
-from unique_meal.user_validation import *
-from unique_meal.sanitize import hash_password
+from user_interface import single_select, password_input, set_toast, clear_terminal
+from classes import *
+from user_validation import *
+from sanitize import hash_password
 
 db: sqlite3.Connection = None
 c: sqlite3.Cursor = None
