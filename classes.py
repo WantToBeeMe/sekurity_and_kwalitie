@@ -1,4 +1,4 @@
-class Addres:
+class Address:
     def __init__(self, street: str, house_number: str, zip: str, city: str) -> None:
         self.street: str = street
         self.house_number: str = house_number
@@ -7,27 +7,33 @@ class Addres:
 
 
 class Member:
-    def __init__(self, id: str, first_name: str, last_name: str,
-                age: int, gender: str, weight: float,
-                addres: Addres, email: str, phone: str) -> None:
+    def __init__(self, id: str, first_name: str, last_name: str, age: int, gender: str,
+                 weight: float, address: Address, email: str, phone: str) -> None:
         self.id: str = id
         self.first_name: str = first_name
         self.last_name: str = last_name
         self.age: int = age
         self.gender: str = gender
         self.weight: float = weight
-        self.addres: Addres = addres
+        self.address: Address = address
         self.email: str = email
         self.phone: str = phone
 
 
-global CONSULTANT; CONSULTANT = 0
-global ADMIN; ADMIN = 1
-global SUPER_ADMIN; SUPER_ADMIN = 2
+global CONSULTANT;
+CONSULTANT = 0
+global ADMIN;
+ADMIN = 1
+global SUPER_ADMIN;
+SUPER_ADMIN = 2
+
+
+
 
 
 class User:
-    def __init__(self, id: int, username: str, password_hash: str, type: int, first_name: str, last_name: str, registration_date: str) -> None:
+    def __init__(self, id: int, username: str, password_hash: str, type: int,
+                 first_name: str, last_name: str, registration_date: str) -> None:
         self.id: int = id
         self.username: str = username
         self.password_hash: str = password_hash
@@ -35,3 +41,6 @@ class User:
         self.first_name: str = first_name
         self.last_name: str = last_name
         self.registration_date: str = registration_date
+
+    def get_role_name(self) -> str:
+        return 'Consultant' if self.type == CONSULTANT else 'Admin' if self.type == ADMIN else 'Super Admin'

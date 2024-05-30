@@ -1,5 +1,11 @@
-import os  # all usages -> checking name of os ; clearing console ; checking if host is PyCharm
+import os  # all usages -> checking name of os ; clearing console
 import sys  # all usages -> reading single key press ; writing stdout ; flushing stdout
+
+# IMPORTANT:
+#   This file can be considered the components' library. It contains all the reusable code snippets
+#   that are used to create nice user interfaces. if this where to be a real web application, then a user could
+#   modify the interface to submit other data that is invalid.
+#   So you should still validate the data coming out of these methods
 
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
@@ -8,17 +14,17 @@ COLOR_ENABLED = True
 CLEAR_TERMINAL_ENABLED = True
 
 
-toast: tuple[str, str] = ("", 'white')
+_toast: tuple[str, str] = ("", 'white')
 
 
-def set_toast(message: str, color: str = 'white') -> None:
+def set_toast(message: str, color: str = 'gray') -> None:
     """
     sets the toast message that will be displayed at the top of the screen once the screen is cleared again
     :param message:  the message to display
     :param color:  the color of the message (gray, red, green, yellow, blue, magenta, cyan, white)
     """
-    global toast
-    toast = (message, color)
+    global _toast
+    _toast = (message, color)
 
 
 def print_colored(text, color, only_if_color: bool = False) -> None:
@@ -58,7 +64,7 @@ def clear_terminal() -> None:
         print("\n" * 5)
 
     print("=====================================")
-    print_colored(*toast)
+    print_colored(*_toast)
     print("=====================================")
 
 

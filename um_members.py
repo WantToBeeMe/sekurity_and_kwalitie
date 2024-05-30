@@ -1,6 +1,5 @@
-import time
 from database import *
-from user_interface import single_select, password_input, set_toast, clear_terminal
+from component_library import single_select, password_input, set_toast, clear_terminal
 from classes import *
 from user_validation import *
 

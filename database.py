@@ -6,7 +6,6 @@ from classes import *
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
 
-
 _db_connection: sqlite3.Connection = None
 _db_cursor: sqlite3.Cursor = None
 
@@ -30,15 +29,8 @@ def setup_database() -> None:
 
     # Check if the users table is empty
     _db_cursor.execute("SELECT COUNT(*) FROM users")
-    count = _db_cursor.fetchone()[0]
-
-    # If the users table is empty, insert a hardcoded initial user
-    if count == 0:
-        initial_username = "super_admin"
-        initial_password = hash_password("Admin_123?")
-        _db_cursor.execute("INSERT INTO users (username, password, type) VALUES (?, ?, ?)",
-                           (initial_username, initial_password, SUPER_ADMIN))
-        _db_connection.commit()
+    if _db_cursor.fetchone()[0] == 0:
+        create_user("super_admin", "Admin_123?", SUPER_ADMIN, "Super", "Admin")
 
 
 def close_database() -> None:
@@ -72,7 +64,7 @@ def get_all_users() -> list[User]:
 def create_user(username: str, password: str, type: int, first_name: str, last_name: str) -> None:
     _db_cursor.execute("SELECT * FROM users WHERE username=?", (username,))
     if _db_cursor.fetchone():
-        return # user already exists
+        return  # user already exists
 
     _db_cursor.execute(
         """
@@ -82,7 +74,7 @@ def create_user(username: str, password: str, type: int, first_name: str, last_n
         (
             username,
             hash_password(password),
-            CONSULTANT,
+            type,
             first_name,
             last_name,
             time.strftime("%Y-%m-%d")
