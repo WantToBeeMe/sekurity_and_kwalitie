@@ -17,6 +17,18 @@ CLEAR_TERMINAL_ENABLED = True
 _toast: tuple[str, str] = ("", 'white')
 
 
+def set_multiple_toasts(messages: list[str], color: str = 'gray', max_rows: int = 3) -> None:
+    """
+    sets multiple toast messages that will be displayed at the top of the screen once the screen is cleared again
+    :param max_rows: the maximum number of rows to display, taken from the end of the list
+    :param messages:  the messages to display
+    :param color:  the color of the message (gray, red, green, yellow, blue, magenta, cyan, white)
+    """
+    # limits shown errors to the last three, otherwise the toast is getting really ugly. no real other reason
+    global _toast
+    _toast = ("\n".join(messages[-max_rows:]), color)
+
+
 def set_toast(message: str, color: str = 'gray') -> None:
     """
     sets the toast message that will be displayed at the top of the screen once the screen is cleared again
@@ -68,15 +80,20 @@ def clear_terminal() -> None:
     print("=====================================")
 
 
-def single_select(title: str, options: list[str], allow_back: bool = True) -> int:
+def single_select(title: str, options: list[str], allow_back: bool = True, item_interactable: bool = True) -> int:
     """
     this method will display a menu to the user with a list of options that the user can choose from.
     it will automatically handle pages if those are needed.
+    :param item_interactable: if the user is allowed to select an item from the list
+     (if True, will force to allow_back=True)
     :param title:  the title of the menu
     :param options:  a list of strings that the user can choose from
     :param allow_back:  if the user should be able to go back
     :return:  the index of the item in the list that the user selected or if the user selected back, it returns -1
     """
+    if not item_interactable:
+        allow_back = True  # if the items are not selectable, then the user should be able to go back
+
     max_per_page = 9
     page = 0
     total_pages = (len(options) + (max_per_page - 1)) // max_per_page
@@ -122,7 +139,10 @@ def single_select(title: str, options: list[str], allow_back: bool = True) -> in
             # we check if the choice index is on this page
             # we check if the real index is in the list
             if 0 < choice_index <= max_per_page and real_index < len(options):
-                return real_index
+                if item_interactable:
+                    return real_index
+                set_toast("The items in the list cant be interacted with.", 'red')
+                continue
 
         elif choice == 'p' or choice == 'previous':
             if page <= 0:

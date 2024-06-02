@@ -1,9 +1,8 @@
-from database import *
-from component_library import single_select, password_input, set_toast, clear_terminal
+import time
+from database import get_current_user, setup_database, close_database, Database, logout_user
+from component_library import single_select, password_input, set_toast, clear_terminal, set_multiple_toasts
 from classes import *
 from user_validation import *
-
-current_user: User = None
 
 
 def main():
@@ -12,17 +11,16 @@ def main():
 
     while True:
         clear_terminal()
-
-        # logout("Goodbye!", "yellow")
+        current_user = get_current_user()
         if not current_user:
             startup_menu()
             continue
 
-        if current_user.type == CONSULTANT:
+        if current_user.type == UserType.CONSULTANT:
             ...
-        elif current_user.type == ADMIN:
+        elif current_user.type == UserType.ADMIN:
             ...
-        elif current_user.type == SUPER_ADMIN:
+        elif current_user.type == UserType.SUPER_ADMIN:
             super_admin_menu()
         else:
             logout("Invalid user type!", "red")
@@ -41,20 +39,20 @@ def startup_menu():
 
 
 def login():
-    global current_user
     username = input("Username: ")
     password = password_input("Password: ")
-
-    current_user = get_user(username, password)
+    # we don't have to validate the input since if the input is not allowed,
+    # then it's not in the db anyway and will return a invalid login anyway
+    db = Database()
+    current_user = db.login_user(username, password)
     if current_user:
         set_toast(f"Welcome {current_user.username}!", "green")
     else:
-        set_toast("Invalid username or password!", "red")
+        set_multiple_toasts(db.get_errors(), "red")
 
 
 def logout(toast_message: str, toast_color: str) -> None:
-    global current_user
-    current_user = None
+    logout_user()  # resetting current user in the database context/module
     set_toast(toast_message, toast_color)
     clear_terminal()
     time.sleep(0.5)  # to ensure the user sees the goodbye message
@@ -79,14 +77,17 @@ def super_admin_menu() -> None:
 
 
 def view_all_users() -> None:
-    users = get_all_users()
+    db = Database()
+    users = db.get_all_users()
+    if users is None:
+        set_multiple_toasts(db.get_errors(), "red")
+        return
 
     options = [
-        f"{user.username} ({user.first_name} {user.last_name}) "
-        f"{'Consultant' if user.type == CONSULTANT else 'Admin' if user.type == ADMIN else 'Super Admin'}"
+        f"{user.username} ({user.first_name} {user.last_name}) {user.get_role_name()} "
         for user in users
     ]
-    single_select("All Users - (Username, Full Name, Type)", options)
+    single_select("All Users - (Username, Full Name, Type)", options, item_interactable=False)
 
 
 def register_new_consultant() -> None:
@@ -98,14 +99,15 @@ def register_new_consultant() -> None:
     validator = Validator()
     if not all([validator.is_valid_name(first_name), validator.is_valid_name(last_name),
                 validator.is_valid_username(username), validator.is_valid_password(password)]):
-        # limits shown errors to the last two, otherwise the toast is getting really ugly
-        errors = validator.get_errors()[-3:]
-        set_toast("\n".join(errors), "red")
+        set_multiple_toasts(validator.get_errors(), "red")
         return
 
-    create_user(username, password, CONSULTANT, first_name, last_name)
-
-    set_toast("Consultant registered successfully!", "green")
+    db = Database()
+    db.create_consultant(username, password, first_name, last_name)
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+    else:
+        set_toast(f"Consultant registered successfully! ({username})", "green")
 
 
 if __name__ == "__main__":

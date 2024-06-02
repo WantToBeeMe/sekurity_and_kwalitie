@@ -32,7 +32,8 @@ class Validator:
 
     def is_valid_username(self, input: str) -> bool:
         allowed_chars = "_'."
-        if 8 >= len(input) > 10:
+        if not 8 <= len(input) <= 10:
+            # quite a small range, but that is what the assignment requested
             self.errors.append("Username must be between 8 and 10 characters long.")
             return False
 
@@ -51,7 +52,7 @@ class Validator:
 
     def is_valid_password(self, input: str) -> bool:
         allowed_chars = "~!@#$%&_-+=`|\\(){}[]:;'<>,.?/"
-        if len(input) < 12 or len(input) > 30:
+        if not 12 <= len(input) <= 30:
             self.errors.append("Password must be between 12 and 30 characters long.")
             return False
 
@@ -103,9 +104,16 @@ class Validator:
 
 
 def generate_user_id() -> str:
+    """
+    This method is used to generate a unique user id for a new member
+    :return: stringifies user id
+    """
     current_year = datetime.now().year
     year_part = str(current_year)[-2:]
     random_part = ''.join(str(random.randint(0, 9)) for _ in range(7))
+    # Theoretically a random_part could be generated that is already in use,
+    # However, this is what the assignment requested so therefor it is implemented as such.
+    # A better way would be to use the current time in milliseconds, since that would always be unique.
 
     sum_digits = sum(int(i) for i in year_part + random_part)
     check_digit = sum_digits % 10

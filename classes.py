@@ -1,3 +1,6 @@
+from enum import Enum
+
+
 class Address:
     def __init__(self, street: str, house_number: str, zip: str, city: str) -> None:
         self.street: str = street
@@ -20,15 +23,10 @@ class Member:
         self.phone: str = phone
 
 
-global CONSULTANT;
-CONSULTANT = 0
-global ADMIN;
-ADMIN = 1
-global SUPER_ADMIN;
-SUPER_ADMIN = 2
-
-
-
+class UserType(Enum):
+    CONSULTANT = 0
+    ADMIN = 1
+    SUPER_ADMIN = 2
 
 
 class User:
@@ -37,10 +35,17 @@ class User:
         self.id: int = id
         self.username: str = username
         self.password_hash: str = password_hash
-        self.type: int = type
+        self.type: UserType = UserType(type)
         self.first_name: str = first_name
         self.last_name: str = last_name
         self.registration_date: str = registration_date
 
     def get_role_name(self) -> str:
-        return 'Consultant' if self.type == CONSULTANT else 'Admin' if self.type == ADMIN else 'Super Admin'
+        if self.type == UserType.CONSULTANT:
+            return 'Consultant'
+        elif self.type == UserType.ADMIN:
+            return 'Admin'
+        elif self.type == UserType.SUPER_ADMIN:
+            return 'Super Admin'
+        else:
+            return 'Unknown'
