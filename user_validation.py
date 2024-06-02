@@ -4,100 +4,102 @@ from datetime import datetime
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
 
-# TODO: This `last_recorded_error` is not definitive ofcourse.
-#   This implementation assumes that every error updates the last_recorded_error.
-#   But if for some reason we as developers forget that, then it will show the previous error message,
-#   which is a vulnerability. So a better implementation would be to have a Validator class, `validator = Validator()`
-#   and be able to call `validator.validate_username(username)` and then you can do `validator.get_last_error()`
-#   This way if we forget to set an error, then it will just return "" ,  which is just dumb, but not a vulnerability.
-last_recorded_error = ""
+
+# The reason for this class is to ensure that we cant view errors from invoked validations
+# that are not related to the current validation. (for instance validation a login, and then validation a user creation)
+# We could do this by clearing the errors list after each validation, but that is easy to forget,
+# and thus would be a bug waiting to happen (and thus a security vulnerability).
+#
+# Instead, we can create a new instance of this class for each validation session, and then we can be sure that
+# the errors are only from the current validation session.
 
 
-def get_recorded_error() -> str:
+class Validator:
     """
-    This will return the last error message that was recorded by the validation functions.
-    This then can be used to display the error message to the user.
-    Note that if there are no errors in a long time, that the old previous error message will still be stored.
-    But this should not matter, since you would only display the error message if the validation function returns False.
+    This class is used to validate user input (things like, username, password, name, age, weight, etc.) \n
+    Each validation method returns a boolean value. And it gathers all the errors along the way.
+    These errors can be retrieved using the `get_errors` method.
     """
-    return last_recorded_error
 
+    def __init__(self):
+        self.errors: list[str] = []
 
-def is_valid_username(input: str) -> bool:
-    global last_recorded_error
-    allowed_chars = "_'."
-    if 8 >= len(input) > 10:
-        last_recorded_error = "Username must be between 8 and 10 characters long."
-        return False
+    def get_errors(self) -> list[str]:
+        """
+        :return: a list of all the errors that have been recorded in this Validator
+        """
+        return self.errors
 
-    if not input[0].isalpha() and input[0] != "_":
-        last_recorded_error = "Username must start with a letter or an underscore."
-        return False
-
-    for i in input:
-        if not i.isalnum() and i not in allowed_chars:
-            last_recorded_error = "Username must only contain letters, numbers, underscores, apostrophes, and periods."
+    def is_valid_username(self, input: str) -> bool:
+        allowed_chars = "_'."
+        if 8 >= len(input) > 10:
+            self.errors.append("Username must be between 8 and 10 characters long.")
             return False
 
-    return True
-
-
-def is_valid_password(input: str) -> bool:
-    global last_recorded_error
-    allowed_chars = "~!@#$%&_-+=`|\\(){}[]:;'<>,.?/"
-    if len(input) < 12 or len(input) > 30:
-        last_recorded_error = "Password must be between 12 and 30 characters long."
-        return False
-
-    has_lower = any(char.islower() for char in input)
-    has_upper = any(char.isupper() for char in input)
-    has_digit = any(char.isdigit() for char in input)
-    has_special = any(char in allowed_chars for char in input)
-
-    if not all([has_lower, has_upper, has_digit, has_special]):
-        last_recorded_error = "Password must contain at least one lowercase, uppercase, digit, and a special character."
-        return False
-
-    return True
-
-
-def is_valid_name(input: str) -> bool:
-    global last_recorded_error
-    if len(input) > 30:
-        last_recorded_error = "Name must be less than 30 characters long."
-        return False
-
-    for i in input:
-        if not i.isalpha() or i == " ":
-            last_recorded_error = "Name can only contain letters."
+        if not input[0].isalpha() and input[0] != "_":
+            self.errors.append("Username must start with a letter or an underscore.")
             return False
 
-    return True
+        for i in input:
+            if not i.isalnum() and i not in allowed_chars:
+                self.errors.append(
+                    "Username must only contain letters, numbers, underscores, apostrophes, and periods."
+                )
+                return False
 
+        return True
 
-def is_valid_age(input: str) -> bool:
-    global last_recorded_error
-    if not input.isdigit():
-        last_recorded_error = "Age must be a number."
-        return False
+    def is_valid_password(self, input: str) -> bool:
+        allowed_chars = "~!@#$%&_-+=`|\\(){}[]:;'<>,.?/"
+        if len(input) < 12 or len(input) > 30:
+            self.errors.append("Password must be between 12 and 30 characters long.")
+            return False
 
-    if not 0 < int(input) < 250:
-        last_recorded_error = "Age must be between 0 and 250."
-        return False
+        has_lower = any(char.islower() for char in input)
+        has_upper = any(char.isupper() for char in input)
+        has_digit = any(char.isdigit() for char in input)
+        has_special = any(char in allowed_chars for char in input)
 
-    return True
+        if not all([has_lower, has_upper, has_digit, has_special]):
+            self.errors.append(
+                "Password must contain at least one lowercase, uppercase, digit, and a special character."
+            )
+            return False
 
+        return True
 
-def is_valid_weight(input: str) -> bool:
-    global last_recorded_error
-    if not input.isdigit():
-        last_recorded_error = "Weight must be a number."
-        return False
+    def is_valid_name(self, input: str) -> bool:
+        if len(input) > 30:
+            self.errors.append("Name must be less than 30 characters long.")
+            return False
 
-    if not 0 < int(input) < 500:
-        last_recorded_error = "Weight must be between 0 and 500."
-        return False
-    return True
+        for i in input:
+            if not i.isalpha() or i == " ":
+                self.errors.append("Name can only contain letters.")
+                return False
+
+        return True
+
+    def is_valid_age(self, input: str) -> bool:
+        if not input.isdigit():
+            self.errors.append("Age must be a number.")
+            return False
+
+        if not 0 < int(input) < 250:
+            self.errors.append("Age must be between 0 and 250.")
+            return False
+
+        return True
+
+    def is_valid_weight(self, input: str) -> bool:
+        if not input.isdigit():
+            self.errors.append("Weight must be a number.")
+            return False
+
+        if not 0 < int(input) < 500:
+            self.errors.append("Weight must be between 0 and 500.")
+            return False
+        return True
 
 
 def generate_user_id() -> str:

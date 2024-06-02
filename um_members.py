@@ -95,9 +95,12 @@ def register_new_consultant() -> None:
     username = input("Username: ")
     password = password_input("Password: ")
 
-    if not all([is_valid_name(first_name), is_valid_name(last_name),
-                is_valid_username(username), is_valid_password(password)]):
-        set_toast(get_recorded_error(), "red")
+    validator = Validator()
+    if not all([validator.is_valid_name(first_name), validator.is_valid_name(last_name),
+                validator.is_valid_username(username), validator.is_valid_password(password)]):
+        # limits shown errors to the last two, otherwise the toast is getting really ugly
+        errors = validator.get_errors()[-3:]
+        set_toast("\n".join(errors), "red")
         return
 
     create_user(username, password, CONSULTANT, first_name, last_name)
