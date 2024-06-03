@@ -1,7 +1,7 @@
 **this file should not be turned in, its just for us to keep track of some stuff**
 
 ## Questions yet to ask
-...
+will saving the current user in a variable just suffice? or do we need to make something complicated with session id and stuff?
 
 ## Important stuff
 Username = super_admin  

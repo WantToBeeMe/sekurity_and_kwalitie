@@ -163,8 +163,6 @@ def single_select(title: str, options: list[str], allow_back: bool = True, item_
 def password_input(prompt: str) -> str:
     """
     this method is like a normal input, however, it will hide the password that the user is typing.
-    if the TERMINAL_CONTROL_ENABLED is False, then this hide feature is disabled (and so it becomes a normal input).
-    This is because the terminal then does not support it
     :param prompt: the prompt to display to the user
     :return: the password that the user entered
     """

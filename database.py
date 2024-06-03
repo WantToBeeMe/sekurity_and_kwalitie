@@ -73,6 +73,9 @@ def is_authorized(user_type: UserType) -> bool:
     return _current_user.type.value >= user_type.value
 
 
+# note that this error will probably never happen in our application since you will not be able to view options that
+# you are not authorized to.
+# However, as specially on the web, you cant just assume that people are only using your interface
 def authorize(user_type: UserType):
     """
     This is a decorator that will check if the current user is authorized to perform the action.
