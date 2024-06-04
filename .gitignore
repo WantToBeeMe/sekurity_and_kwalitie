@@ -5,10 +5,8 @@
 .vscode/
 .idea/
 
-
-
-
-
+# key files
+*.pem
 
 ## OTHER DEFAULT GENERATED STUFF, TO LAZY TO READ ##
 

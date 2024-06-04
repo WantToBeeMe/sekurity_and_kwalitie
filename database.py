@@ -1,7 +1,9 @@
 import sqlite3
 import time
 import hashlib
-from classes import *
+from classes import User, UserType
+from user_validation import is_valid_username, is_valid_password, is_valid_name
+from encryption import initialize_keys, encrypt_data, decrypt_data
 
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
@@ -25,14 +27,15 @@ def setup_database() -> None:
     Calling this method before the rest of the code will ensure that the database is ready to be used.
     """
     global _db_connection, _db_cursor
+    initialize_keys()
     _db_connection = sqlite3.connect('unique_meal.db')
     _db_cursor = _db_connection.cursor()
     _db_cursor.execute('''CREATE TABLE IF NOT EXISTS users
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, type INTEGER,
-                first_name TEXT, last_name TEXT, registration_date DATE)''')
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, type TEXT,
+                first_name TEXT, last_name TEXT, registration_date TEXT)''')
 
     _db_cursor.execute('''CREATE TABLE IF NOT EXISTS members
-                    (id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age INTEGER
+                    (id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age TEXT
                     gender TEXT, weight REAL, street TEXT, house_number TEXT, zip TEXT,
                     city TEXT, email TEXT, phone TEXT)''')
 
@@ -46,12 +49,12 @@ def setup_database() -> None:
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
-                "super_admin",
-                hash_password("Admin_123?"),
-                UserType.SUPER_ADMIN.value,
-                "Super",
-                "Admin",
-                time.strftime("%Y-%m-%d")
+                encrypt_data("super_admin"),
+                encrypt_data(hash_password("Admin_123?")),
+                encrypt_data(f"{UserType.SUPER_ADMIN.value}"),
+                encrypt_data("Super"),
+                encrypt_data("Admin"),
+                encrypt_data(time.strftime("%Y-%m-%d"))
             )
         )
         _db_connection.commit()
@@ -123,13 +126,14 @@ class Database:
 
         time.sleep(0.2)  # this query must have a little delay to prevent brute force attacks
         _db_cursor.execute("SELECT * FROM users WHERE username=? AND password=?",
-                           (username, hash_password(password)))
+                           (encrypt_data(username), encrypt_data(hash_password(password))))
+
         user_row = _db_cursor.fetchone()
         if user_row:
             _current_user = User(*user_row)
             return _current_user
-
-        self.errors.append("Invalid username or password!")
+        s = encrypt_data(username)
+        self.errors.append(f"Invalid username or password! {s}")
         return None
 
     @authorize(UserType.ADMIN)
@@ -149,6 +153,21 @@ class Database:
         return self._create_user(username, password, UserType.ADMIN, first_name, last_name)
 
     def _create_user(self, username: str, password: str, type: UserType, first_name: str, last_name: str) -> None:
+        first_name_valid = is_valid_name(first_name)
+        last_name_valid = is_valid_name(last_name)
+        username_valid = is_valid_username(username)
+        password_valid = is_valid_password(password)
+        if not all([first_name_valid,last_name_valid, username_valid, password_valid]):
+            if not first_name_valid:
+                self.errors.append("First name must be between 2 and 30 characters long and can only contain letters and spaces.")
+            if not first_name_valid:
+                self.errors.append("Last name must be between 2 and 30 characters long and can only contain letters and spaces.")
+            if not username_valid:
+                self.errors.append("Username must be between 3 and 20 characters long and can only contain letters, numbers, and underscores.")
+            if not password_valid:
+                self.errors.append("Password must be between 8 and 20 characters long and must contain at least one uppercase letter, one lowercase letter, one number, and one special character.")
+            return
+
         _db_cursor.execute("SELECT * FROM users WHERE username=?", (username,))
         if _db_cursor.fetchone():
             self.errors.append("A user with this username already exists.")

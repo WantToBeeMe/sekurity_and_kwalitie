@@ -5,102 +5,80 @@ if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
 
 
-# The reason for this class is to ensure that we cant view errors from invoked validations
-# that are not related to the current validation. (for instance validation a login, and then validation a user creation)
-# We could do this by clearing the errors list after each validation, but that is easy to forget,
-# and thus would be a bug waiting to happen (and thus a security vulnerability).
-#
-# Instead, we can create a new instance of this class for each validation session, and then we can be sure that
-# the errors are only from the current validation session.
+"""
+All validation functions are coded in a way such that they always return false unless all conditions are met.
+This way we whitelist only the correct inputs.
+"""
 
 
-class Validator:
-    """
-    This class is used to validate user input (things like, username, password, name, age, weight, etc.) \n
-    Each validation method returns a boolean value. And it gathers all the errors along the way.
-    These errors can be retrieved using the `get_errors` method.
-    """
+def is_valid_username(input: str) -> bool:
+    allowed_chars = "_'."
+    valid_length = 8 <= len(input) <= 10
+    if not valid_length:
+        return False # we return early since the length can be 0, and will cause an error in the next checks
+    valid_start_char = input[0].isalpha() or input[0] == "_"
+    valid_chars = all(i.isalnum() or i in allowed_chars for i in input)
 
-    def __init__(self):
-        self.errors: list[str] = []
-
-    def get_errors(self) -> list[str]:
-        """
-        :return: a list of all the errors that have been recorded in this Validator
-        """
-        return self.errors
-
-    def is_valid_username(self, input: str) -> bool:
-        allowed_chars = "_'."
-        if not 8 <= len(input) <= 10:
-            # quite a small range, but that is what the assignment requested
-            self.errors.append("Username must be between 8 and 10 characters long.")
-            return False
-
-        if not input[0].isalpha() and input[0] != "_":
-            self.errors.append("Username must start with a letter or an underscore.")
-            return False
-
-        for i in input:
-            if not i.isalnum() and i not in allowed_chars:
-                self.errors.append(
-                    "Username must only contain letters, numbers, underscores, apostrophes, and periods."
-                )
-                return False
-
+    if all([valid_length, valid_start_char, valid_chars]):
         return True
 
-    def is_valid_password(self, input: str) -> bool:
-        allowed_chars = "~!@#$%&_-+=`|\\(){}[]:;'<>,.?/"
-        if not 12 <= len(input) <= 30:
-            self.errors.append("Password must be between 12 and 30 characters long.")
-            return False
+    return False
 
-        has_lower = any(char.islower() for char in input)
-        has_upper = any(char.isupper() for char in input)
-        has_digit = any(char.isdigit() for char in input)
-        has_special = any(char in allowed_chars for char in input)
 
-        if not all([has_lower, has_upper, has_digit, has_special]):
-            self.errors.append(
-                "Password must contain at least one lowercase, uppercase, digit, and a special character."
-            )
-            return False
+def is_valid_password(input: str) -> bool:
+    allowed_chars = "~!@#$%&_-+=`|\\(){}[]:;'<>,.?/"
 
+    valid_length= 12 <= len(input) <= 30
+    has_lower = any(char.islower() for char in input)
+    has_upper = any(char.isupper() for char in input)
+    has_digit = any(char.isdigit() for char in input)
+    has_special = any(char in allowed_chars for char in input)
+
+    if all([has_lower, has_upper, has_digit, has_special, valid_length]):
+        return True
+    return False
+
+
+def is_valid_name(input: str) -> bool:
+    valid_length = 2 < len(input) < 30
+    vaild_chars = all(i.isalpha() or i == " " for i in input)
+
+    if all([valid_length, vaild_chars]):
+        return True
+    return False
+
+
+def is_valid_age(input: str) -> bool:
+    is_digit = input.isdigit()
+    valid_age = False
+    if is_digit:
+        valid_age = 0 < int(input) < 250
+
+    if all([is_digit, valid_age]):
+        return True
+    return False
+
+
+def is_valid_weight(input: str) -> bool:
+    is_digit = input.isdigit()
+    valid_amount = False
+    if is_digit:
+        valid_amount = 0 < int(input) < 500
+
+    if all([is_digit, valid_amount]):
         return True
 
-    def is_valid_name(self, input: str) -> bool:
-        if len(input) > 30:
-            self.errors.append("Name must be less than 30 characters long.")
-            return False
+    # "Weight must be a number between 0 and 500."
+    return False
 
-        for i in input:
-            if not i.isalpha() or i == " ":
-                self.errors.append("Name can only contain letters.")
-                return False
 
+def is_valid_phone_number(input: str) -> bool:
+    is_digit = input.isdigit()
+    valid_length = len(input) == 8
+
+    if all([is_digit, valid_length]):
         return True
-
-    def is_valid_age(self, input: str) -> bool:
-        if not input.isdigit():
-            self.errors.append("Age must be a number.")
-            return False
-
-        if not 0 < int(input) < 250:
-            self.errors.append("Age must be between 0 and 250.")
-            return False
-
-        return True
-
-    def is_valid_weight(self, input: str) -> bool:
-        if not input.isdigit():
-            self.errors.append("Weight must be a number.")
-            return False
-
-        if not 0 < int(input) < 500:
-            self.errors.append("Weight must be between 0 and 500.")
-            return False
-        return True
+    return False
 
 
 def generate_user_id() -> str:

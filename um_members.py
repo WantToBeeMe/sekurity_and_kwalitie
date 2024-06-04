@@ -1,8 +1,7 @@
 import time
 from database import get_current_user, setup_database, close_database, Database, logout_user
 from component_library import single_select, password_input, set_toast, clear_terminal, set_multiple_toasts
-from classes import *
-from user_validation import *
+from classes import UserType
 
 
 def main():
@@ -95,12 +94,6 @@ def register_new_consultant() -> None:
     last_name = input("Last name: ")
     username = input("Username: ")
     password = password_input("Password: ")
-
-    validator = Validator()
-    if not all([validator.is_valid_name(first_name), validator.is_valid_name(last_name),
-                validator.is_valid_username(username), validator.is_valid_password(password)]):
-        set_multiple_toasts(validator.get_errors(), "red")
-        return
 
     db = Database()
     db.create_consultant(username, password, first_name, last_name)
