@@ -74,7 +74,7 @@ def initialize_keys():
         _save_key_to_file(_public_key, 'public_key.pem', is_private=False)
 
 
-def encrypt_data(data):
+def encrypt_data(data : str) -> str:
     encrypted_data = _public_key.encrypt(
         data.encode(),
         padding.OAEP(
@@ -86,9 +86,9 @@ def encrypt_data(data):
     return encrypted_data.hex()
 
 
-def decrypt_data(encrypted_data):
+def decrypt_data(encrypted_data : str) -> str:
     decrypted_data = _private_key.decrypt(
-        encrypted_data,
+        bytes.fromhex(encrypted_data),
         padding.OAEP(
             mgf=padding.MGF1(algorithm=hashes.SHA256()),
             algorithm=hashes.SHA256(),
@@ -99,3 +99,9 @@ def decrypt_data(encrypted_data):
 
 if __name__ == '__main__':
     initialize_keys()
+
+    name = "super_admin"
+    encrypt1 = encrypt_data(name)
+    encrypt2 = decrypt_data(encrypt1)
+    print(encrypt1)
+    print(encrypt2)

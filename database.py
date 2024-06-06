@@ -39,8 +39,14 @@ def setup_database() -> None:
                     gender TEXT, weight REAL, street TEXT, house_number TEXT, zip TEXT,
                     city TEXT, email TEXT, phone TEXT)''')
 
+     # Delete all users so that the check if there are 0 users is always true (and thus creates a new user)
+    _db_cursor.execute("DELETE FROM users")
+    _db_connection.commit()
+
+
     # Check if the users table is empty
     _db_cursor.execute("SELECT COUNT(*) FROM users")
+
     if _db_cursor.fetchone()[0] == 0:
         # creating the super admin user if there is no user in the database (aka if its newly created)
         _db_cursor.execute(
@@ -125,15 +131,16 @@ class Database:
             return None
 
         time.sleep(0.2)  # this query must have a little delay to prevent brute force attacks
-        _db_cursor.execute("SELECT * FROM users WHERE username=? AND password=?",
-                           (encrypt_data(username), encrypt_data(hash_password(password))))
 
-        user_row = _db_cursor.fetchone()
-        if user_row:
-            _current_user = User(*user_row)
-            return _current_user
-        s = encrypt_data(username)
-        self.errors.append(f"Invalid username or password! {s}")
+
+        all_users = self._get_all_users()
+        for user in all_users:
+           
+            if user.username == username and user.password_hash == hash_password(password):
+                _current_user = user
+                return _current_user
+            
+        self.errors.append(f"Invalid username or password!")
         return None
 
     @authorize(UserType.ADMIN)
@@ -168,8 +175,8 @@ class Database:
                 self.errors.append("Password must be between 8 and 20 characters long and must contain at least one uppercase letter, one lowercase letter, one number, and one special character.")
             return
 
-        _db_cursor.execute("SELECT * FROM users WHERE username=?", (username,))
-        if _db_cursor.fetchone():
+        all_users = self._get_all_users()
+        if [user for user in all_users if user.name == username]:
             self.errors.append("A user with this username already exists.")
             return  # user already exists
 
@@ -179,12 +186,29 @@ class Database:
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
-                username,
-                hash_password(password),
-                type.value,
-                first_name,
-                last_name,
-                time.strftime("%Y-%m-%d")
+                encrypt_data(username),
+                encrypt_data(hash_password(password)),
+                encrypt_data(type.value),
+                encrypt_data(first_name),
+                encrypt_data(last_name),
+                encrypt_data(time.strftime("%Y-%m-%d"))
             )
         )
         _db_connection.commit()
+
+    # we cant search for the encrtyped data in the db, since the encryption is kinda 
+    # random since the encryption adds random padding to the input data
+    # therefore we have this method to get a list of the users so we can filter on those
+    def _get_all_users(self) -> list[User]:
+        _db_cursor.execute("SELECT * FROM users")
+        users = _db_cursor.fetchall()
+
+        return_list = []
+        # we cant search for the encrtyped data in the db, since the encryption is kinda 
+        # random since the encryption adds random padding to the input data
+        for user in users:
+            decrypted_user = tuple(decrypt_data(user_data) for user_data in user[1:])
+            created_user = User(user[0], *decrypted_user)
+            return_list.append(created_user)
+        
+        return return_list
