@@ -2,6 +2,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
+import hashlib
 
 # We will use RSA, this is an asymmetric encryption algorithm (like asked)
 # it will generate key pairs, encrypt and decrypt data
@@ -105,3 +106,7 @@ if __name__ == '__main__':
     encrypt2 = decrypt_data(encrypt1)
     print(encrypt1)
     print(encrypt2)
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()

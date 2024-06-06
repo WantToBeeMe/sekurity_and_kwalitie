@@ -1,9 +1,8 @@
 import sqlite3
 import time
-import hashlib
 from classes import User, UserType
 from user_validation import is_valid_username, is_valid_password, is_valid_name
-from encryption import initialize_keys, encrypt_data, decrypt_data
+from encryption import initialize_keys, encrypt_data, decrypt_data, hash_password
 
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
@@ -15,10 +14,6 @@ _current_user: User = None
 
 def get_current_user() -> User:
     return _current_user
-
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
 
 
 def setup_database() -> None:
@@ -101,6 +96,29 @@ def authorize(user_type: UserType):
     return decorator
 
 
+# we cant search for the encrtyped data in the db, since the encryption is kinda 
+# random since the encryption adds random padding to the input data
+# therefore we have this method to get a list of the users so we can filter on those
+def _get_all_users() -> list[User]:
+    """
+    This method returns all users, however, it is not ment to be used outside this file
+    since its ment to be private (indicated by the underscore in front)
+    Instead use `Database().get_all_users()` which returns the same thing, 
+    but has some validation if the user can actually retrieve it
+    """
+    _db_cursor.execute("SELECT * FROM users")
+    users = _db_cursor.fetchall()
+
+    return_list = []
+    # we cant search for the encrtyped data in the db, since the encryption is kinda 
+    # random since the encryption adds random padding to the input data
+    for user in users:
+        decrypted_user = tuple(decrypt_data(user_data) for user_data in user[1:])
+        return_list.append(User(user[0], *decrypted_user))
+    
+    return return_list
+
+
 class Database:
     """
     This class is used to interact with the database. And it gathers all the errors along the way.
@@ -133,7 +151,7 @@ class Database:
         time.sleep(0.2)  # this query must have a little delay to prevent brute force attacks
 
 
-        all_users = self._get_all_users()
+        all_users = _get_all_users()
         for user in all_users:
            
             if user.username == username and user.password_hash == hash_password(password):
@@ -148,8 +166,8 @@ class Database:
         """
         :return: Returns a list of all users in the database
         """
-        _db_cursor.execute("SELECT * FROM users")
-        return [User(*user_row) for user_row in _db_cursor.fetchall()]
+        return _get_all_users()
+  
 
     @authorize(UserType.ADMIN)
     def create_consultant(self, username: str, password: str, first_name: str, last_name: str) -> None:
@@ -175,7 +193,7 @@ class Database:
                 self.errors.append("Password must be between 8 and 20 characters long and must contain at least one uppercase letter, one lowercase letter, one number, and one special character.")
             return
 
-        all_users = self._get_all_users()
+        all_users = _get_all_users()
         if [user for user in all_users if user.name == username]:
             self.errors.append("A user with this username already exists.")
             return  # user already exists
@@ -195,20 +213,3 @@ class Database:
             )
         )
         _db_connection.commit()
-
-    # we cant search for the encrtyped data in the db, since the encryption is kinda 
-    # random since the encryption adds random padding to the input data
-    # therefore we have this method to get a list of the users so we can filter on those
-    def _get_all_users(self) -> list[User]:
-        _db_cursor.execute("SELECT * FROM users")
-        users = _db_cursor.fetchall()
-
-        return_list = []
-        # we cant search for the encrtyped data in the db, since the encryption is kinda 
-        # random since the encryption adds random padding to the input data
-        for user in users:
-            decrypted_user = tuple(decrypt_data(user_data) for user_data in user[1:])
-            created_user = User(user[0], *decrypted_user)
-            return_list.append(created_user)
-        
-        return return_list
