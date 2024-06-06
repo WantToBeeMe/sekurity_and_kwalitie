@@ -146,13 +146,13 @@ def single_select(title: str, options: list[str], allow_back: bool = True, item_
 
         elif choice == 'p' or choice == 'previous':
             if page <= 0:
-                set_toast("You cant go back any further", 'yellow')
+                set_toast("You are already on the first page, you cant go back any further", 'yellow')
             else:
                 page -= 1
             continue
         elif choice == 'n' or choice == 'next':
             if page >= total_pages - 1:
-                set_toast("You cant go forward any further", 'yellow')
+                set_toast("You are already on the last page, you cant go forward any further", 'yellow')
             else:
                 page += 1
             continue

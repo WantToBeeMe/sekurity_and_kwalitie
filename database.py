@@ -2,7 +2,7 @@ import sqlite3
 import time
 from classes import User, UserType
 from user_validation import is_valid_username, is_valid_password, is_valid_name
-from encryption import initialize_keys, encrypt_data, decrypt_data, hash_password
+from encryption import initialize_keys, encrypt_data, decrypt_data, hash_password, compare_passwords
 
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
@@ -154,7 +154,7 @@ class Database:
         all_users = _get_all_users()
         for user in all_users:
            
-            if user.username == username and user.password_hash == hash_password(password):
+            if user.username == username and compare_passwords(password, user.password_hash):
                 _current_user = user
                 return _current_user
             

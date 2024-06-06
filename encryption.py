@@ -2,8 +2,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
-import hashlib
-
+import bcrypt
 
 if __name__ == '__main__':
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
@@ -24,16 +23,16 @@ def _save_key_to_file(key, filename, is_private=False):
         format = serialization.PrivateFormat.TraditionalOpenSSL
         encryption_algorithm = serialization.NoEncryption()
         key_bytes = key.private_bytes(
-            encoding = encoding,
-            format = format,
-            encryption_algorithm = encryption_algorithm)
+            encoding=encoding,
+            format=format,
+            encryption_algorithm=encryption_algorithm)
     else:
         encoding = serialization.Encoding.PEM
         format = serialization.PublicFormat.SubjectPublicKeyInfo
         encryption_algorithm = serialization.NoEncryption()
         key_bytes = key.public_bytes(
-            encoding = encoding,
-            format = format
+            encoding=encoding,
+            format=format
         )
     with open(filename, 'wb') as key_file:
         key_file.write(key_bytes)
@@ -79,7 +78,7 @@ def initialize_keys():
         _save_key_to_file(_public_key, 'public_key.pem', is_private=False)
 
 
-def encrypt_data(data : str) -> str:
+def encrypt_data(data: str) -> str:
     encrypted_data = _public_key.encrypt(
         data.encode(),
         padding.OAEP(
@@ -91,7 +90,7 @@ def encrypt_data(data : str) -> str:
     return encrypted_data.hex()
 
 
-def decrypt_data(encrypted_data : str) -> str:
+def decrypt_data(encrypted_data: str) -> str:
     decrypted_data = _private_key.decrypt(
         bytes.fromhex(encrypted_data),
         padding.OAEP(
@@ -104,4 +103,9 @@ def decrypt_data(encrypted_data : str) -> str:
 
 
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).hex()
+
+
+def compare_passwords(password_plain_text: str, password_hash_hex: str) -> bool:
+    return bcrypt.checkpw(password_plain_text.encode(), bytes.fromhex(password_hash_hex))
+

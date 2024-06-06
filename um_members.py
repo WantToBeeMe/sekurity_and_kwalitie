@@ -29,10 +29,10 @@ def main():
 
 def startup_menu():
     options = ["Login", "Exit"]
+
     option_index = single_select("Main Menu", options, allow_back=False)
 
     if option_index == 0:
-        clear_terminal()
         login()
     elif option_index == 1:
         # we don't have to close db here, it will be done in the final block
@@ -40,35 +40,110 @@ def startup_menu():
 
 
 def consultant_menu():
-    options = ["Add members","Logout"]
+    options = ["Logout", "Edit my password", "Add new member", "Edit a member", "Search for a member"]
     option_index = single_select("Main Menu", options, allow_back=False)
-    if option_index == 1:
+
+    if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
+    elif option_index == 1:  # edit password
+        set_toast("not implemented [edit password]", "blue")
+    elif option_index == 2:  # add new member
+        set_toast("not implemented [add new member]", "blue")
+    elif option_index == 3:  # update a member
+        set_toast("not implemented [update a member]", "blue")
+    elif option_index == 4:  # search for a member
+        set_toast("not implemented [search for a member]", "blue")
     else:
         set_toast("Invalid option!", "red")
+
 
 def admin_menu():
-    options = ["Add members","Logout"]
+    options = ["Logout", "Edit my password", "Add new member", "Edit a member", "Delete a member",
+               "Search for a member",  # note that the consultant can NOT delete a member
+               "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
+               "Reset a consultant's password", "Make a backup", "Restore a backup", "View logs"]
+    # editing and deleting can maybe be combined
     option_index = single_select("Main Menu", options, allow_back=False)
-    if option_index == 1:
+
+    if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
+    elif option_index == 1:  # edit password
+        set_toast("not implemented [edit password]", "blue")
+    elif option_index == 2:  # add new member
+        set_toast("not implemented [add new member]", "blue")
+    elif option_index == 3:  # update a member
+        set_toast("not implemented [update a member]", "blue")
+    elif option_index == 4:  # delete a member
+        set_toast("not implemented [delete a member]", "blue")
+    elif option_index == 5:  # search for a member
+        set_toast("not implemented [search for a member]", "blue")
+    elif option_index == 6:  # view all users
+        view_all_users()
+    elif option_index == 7:  # register new consultant
+        register_new_user(UserType.CONSULTANT)
+    elif option_index == 8:  # edit a consultant
+        set_toast("not implemented [edit a consultant]", "blue")
+    elif option_index == 9:  # delete a consultant
+        set_toast("not implemented [delete a consultant]", "blue")
+    elif option_index == 10:  # reset a consultant's password
+        set_toast("not implemented [reset a consultant's password]", "blue")
+    elif option_index == 11:  # make a backup
+        set_toast("not implemented [make a backup]", "blue")
+    elif option_index == 12:  # restore a backup
+        set_toast("not implemented [restore a backup]", "blue")
+    elif option_index == 13:  # view logs
+        set_toast("not implemented [view logs]", "blue")
     else:
         set_toast("Invalid option!", "red")
 
+
 def super_admin_menu() -> None:
-    options = ["View all Users", "Register new consultant", "Logout"]
+    options = ["Logout", "Edit my password", "Add new member", "Edit a member", "Delete a member",
+               "Search for a member",  # note that the consultant can NOT delete a member
+               "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
+               "Reset a consultant's password", "Register new admin", "Edit an admin", "Delete an admin",
+               "Reset an admins password",
+               "Make a backup", "Restore a backup", "View logs"]
+    # editing and deleting can maybe be combined
     option_index = single_select("Main Menu", options, allow_back=False)
 
-    if option_index == 0:
-        clear_terminal()
-        view_all_users()
-    elif option_index == 1:
-        clear_terminal()
-        register_new_consultant()
-    elif option_index == 2:
+    if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
+    elif option_index == 1:  # edit my password
+        set_toast("not implemented [edit my password]", "blue")
+    elif option_index == 2:  # add new member
+        set_toast("not implemented [add new member]", "blue")
+    elif option_index == 3:  # update a member
+        set_toast("not implemented [update a member]", "blue")
+    elif option_index == 4:  # delete a member
+        set_toast("not implemented [delete a member]", "blue")
+    elif option_index == 5:  # search for a member
+        set_toast("not implemented [search for a member]", "blue")
+    elif option_index == 6:  # view all users
+        view_all_users()
+    elif option_index == 7:  # register new consultant
+        register_new_user(UserType.CONSULTANT)
+    elif option_index == 8:  # edit a consultant
+        set_toast("not implemented [edit a consultant]", "blue")
+    elif option_index == 9:  # delete a consultant
+        set_toast("not implemented [delete a consultant]", "blue")
+    elif option_index == 10:  # reset a consultant's password
+        set_toast("not implemented [reset a consultant's password]", "blue")
+    elif option_index == 11:  # register new admin
+        register_new_user(UserType.ADMIN)
+    elif option_index == 12:  # edit an admin
+        set_toast("not implemented [edit an admin]", "blue")
+    elif option_index == 13:  # delete an admin
+        set_toast("not implemented [delete an admin]", "blue")
+    elif option_index == 14:  # reset an admins password
+        set_toast("not implemented [reset an admins password]", "blue")
+    elif option_index == 15:  # make a backup
+        set_toast("not implemented [make a backup]", "blue")
+    elif option_index == 16:  # restore a backup
+        set_toast("not implemented [restore a backup]", "blue")
+    elif option_index == 17:  # view logs
+        set_toast("not implemented [view logs]", "blue")
     else:
-        # this should never happen since the select only returns a number. but
         set_toast("Invalid option!", "red")
 
 
@@ -77,6 +152,7 @@ def super_admin_menu() -> None:
 # =================== #
 
 def login():
+    clear_terminal()
     username = input("Username: ")
     password = password_input("Password: ")
     # we don't have to validate the input since if the input is not allowed,
@@ -98,6 +174,7 @@ def logout(toast_message: str, toast_color: str) -> None:
 
 
 def view_all_users() -> None:
+    clear_terminal()
     db = Database()
     users = db.get_all_users()
     if users is None:
@@ -111,14 +188,20 @@ def view_all_users() -> None:
     single_select("All Users - (Username, Full Name, Type)", options, item_interactable=False)
 
 
-def register_new_consultant() -> None:
+def register_new_user(role: UserType) -> None:
+    clear_terminal()
     first_name = input("First name: ")
     last_name = input("Last name: ")
     username = input("Username: ")
     password = password_input("Password: ")
 
     db = Database()
-    db.create_consultant(username, password, first_name, last_name)
+    if role == UserType.ADMIN:
+        db.create_admin(username, password, first_name, last_name)
+    elif role == UserType.CONSULTANT:
+        db.create_consultant(username, password, first_name, last_name)
+    else:
+        return
     if any(db.get_errors()):
         set_multiple_toasts(db.get_errors(), "red")
     else:
