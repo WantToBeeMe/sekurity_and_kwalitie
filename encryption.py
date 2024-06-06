@@ -4,6 +4,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 import hashlib
 
+
+if __name__ == '__main__':
+    raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
+
 # We will use RSA, this is an asymmetric encryption algorithm (like asked)
 # it will generate key pairs, encrypt and decrypt data
 # public key is used to encrypt data and private key is used to decrypt data so the private key should be kept secret
@@ -97,15 +101,6 @@ def decrypt_data(encrypted_data : str) -> str:
         )
     )
     return decrypted_data.decode()
-
-if __name__ == '__main__':
-    initialize_keys()
-
-    name = "super_admin"
-    encrypt1 = encrypt_data(name)
-    encrypt2 = decrypt_data(encrypt1)
-    print(encrypt1)
-    print(encrypt2)
 
 
 def hash_password(password: str) -> str:

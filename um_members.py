@@ -13,17 +13,19 @@ def main():
         current_user = get_current_user()
         if not current_user:
             startup_menu()
-            continue
-
-        if current_user.type == UserType.CONSULTANT:
-            ...
+        elif current_user.type == UserType.CONSULTANT:
+            consultant_menu()
         elif current_user.type == UserType.ADMIN:
-            ...
+            admin_menu()
         elif current_user.type == UserType.SUPER_ADMIN:
             super_admin_menu()
         else:
             logout("Invalid user type!", "red")
 
+
+# =================== #
+#        MENUS        #
+# =================== #
 
 def startup_menu():
     options = ["Login", "Exit"]
@@ -36,6 +38,43 @@ def startup_menu():
         # we don't have to close db here, it will be done in the final block
         exit(0)
 
+
+def consultant_menu():
+    options = ["Add members","Logout"]
+    option_index = single_select("Main Menu", options, allow_back=False)
+    if option_index == 1:
+        logout("Goodbye!", "yellow")
+    else:
+        set_toast("Invalid option!", "red")
+
+def admin_menu():
+    options = ["Add members","Logout"]
+    option_index = single_select("Main Menu", options, allow_back=False)
+    if option_index == 1:
+        logout("Goodbye!", "yellow")
+    else:
+        set_toast("Invalid option!", "red")
+
+def super_admin_menu() -> None:
+    options = ["View all Users", "Register new consultant", "Logout"]
+    option_index = single_select("Main Menu", options, allow_back=False)
+
+    if option_index == 0:
+        clear_terminal()
+        view_all_users()
+    elif option_index == 1:
+        clear_terminal()
+        register_new_consultant()
+    elif option_index == 2:
+        logout("Goodbye!", "yellow")
+    else:
+        # this should never happen since the select only returns a number. but
+        set_toast("Invalid option!", "red")
+
+
+# =================== #
+#   THE OTHER STUFF   #
+# =================== #
 
 def login():
     username = input("Username: ")
@@ -56,23 +95,6 @@ def logout(toast_message: str, toast_color: str) -> None:
     clear_terminal()
     time.sleep(0.5)  # to ensure the user sees the goodbye message
     set_toast("Welcome to the Unique Meal App!", "green")
-
-
-def super_admin_menu() -> None:
-    options = ["View all Users", "Register new consultant", "Exit"]
-    option_index = single_select("Main Menu", options, allow_back=False)
-
-    if option_index == 0:
-        clear_terminal()
-        view_all_users()
-    elif option_index == 1:
-        clear_terminal()
-        register_new_consultant()
-    elif option_index == 2:
-        logout("Goodbye!", "yellow")
-    else:
-        # this should never happen since the select only returns a number. but
-        set_toast("Invalid option!", "red")
 
 
 def view_all_users() -> None:
