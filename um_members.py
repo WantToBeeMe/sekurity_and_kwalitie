@@ -1,5 +1,5 @@
 import time
-from database import get_current_user, setup_database, close_database, Database, logout_user
+from database import get_current_user, setup_database, close_database, Database, logout_user, get_all_cities
 from component_library import single_select, password_input, set_toast, clear_terminal, set_multiple_toasts
 from classes import UserType
 
@@ -110,7 +110,7 @@ def super_admin_menu() -> None:
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit my password
-        set_toast("not implemented [edit my password]", "blue")
+        edit_password()
     elif option_index == 2:  # add new member
         set_toast("not implemented [add new member]", "blue")
     elif option_index == 3:  # update a member
@@ -151,6 +151,7 @@ def super_admin_menu() -> None:
 #   THE OTHER STUFF   #
 # =================== #
 
+
 def login():
     clear_terminal()
     username = input("Username: ")
@@ -173,6 +174,23 @@ def logout(toast_message: str, toast_color: str) -> None:
     set_toast("Welcome to the Unique Meal App!", "green")
 
 
+def edit_password() -> None:
+    clear_terminal()
+    old_password = password_input("Old password: ")
+    new_password = password_input("New password: ")
+    confirm_password = password_input("Confirm new password: ")
+    if new_password != confirm_password:
+        set_toast("Passwords do not match!", "red")
+        return
+
+    db = Database()
+    db.edit_password(old_password, new_password)
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+    else:
+        set_toast("Password changed successfully!", "green")
+
+
 def view_all_users() -> None:
     clear_terminal()
     db = Database()
@@ -186,6 +204,11 @@ def view_all_users() -> None:
         for user in users
     ]
     single_select("All Users - (Username, Full Name, Type)", options, item_interactable=False)
+
+
+# =================== #
+# ACCOUNT MANAGEMENT  #
+# =================== #
 
 
 def register_new_user(role: UserType) -> None:
@@ -206,6 +229,24 @@ def register_new_user(role: UserType) -> None:
         set_multiple_toasts(db.get_errors(), "red")
     else:
         set_toast(f"Consultant registered successfully! ({username})", "green")
+
+
+def add_new_member(self) -> None:
+    clear_terminal()
+    first_name = input("First name: ")
+    last_name = input("Last name: ")
+    age = input("Age: ")
+    gender = single_select("Gender:", ["Male", "Female", "Other", "Prefer not to say"], allow_back=False)
+    weight = input("Weight: ")
+    street = input("Street: ")
+    house_number = input("House number: ")
+    zip_code = input("Zip code: ")
+    city = single_select("City:", get_all_cities(), allow_back=False)
+    email = input("Email: ")
+    phone = input("Phone: +31-6- (only last 8 digits):")
+
+    # db = Database()
+    # db.create_member()
 
 
 if __name__ == "__main__":

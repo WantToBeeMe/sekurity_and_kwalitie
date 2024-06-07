@@ -78,16 +78,20 @@ def initialize_keys():
         _save_key_to_file(_public_key, 'public_key.pem', is_private=False)
 
 
-def encrypt_data(data: str) -> str:
+def encrypt_data(data: str) -> bytes:
     encrypted_data = _public_key.encrypt(
-        data.encode(),
+        data.encode("utf-8"),
         padding.OAEP(
             mgf=padding.MGF1(algorithm=hashes.SHA256()),
             algorithm=hashes.SHA256(),
             label=None
         )
     )
-    return encrypted_data.hex()
+    return encrypted_data
+
+
+def encrypt_data_str(data: str) -> str:
+    return encrypt_data(data).hex()
 
 
 def decrypt_data(encrypted_data: str) -> str:

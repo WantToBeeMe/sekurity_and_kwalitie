@@ -1,4 +1,5 @@
 import random
+import re
 from datetime import datetime
 
 if __name__ == "__main__":
@@ -9,6 +10,22 @@ if __name__ == "__main__":
 All validation functions are coded in a way such that they always return false unless all conditions are met.
 This way we whitelist only the correct inputs.
 """
+
+def get_all_cities() -> list[str]:
+    cities = ["Amsterdam", "Rotterdam", "Utrecht", "Eindhoven", "Tilburg", "Groningen", "Breda", "Apeldoorn", "Nijmegen", "Haarlem"]
+    return cities
+
+def is_valid_email(input: str) -> bool:
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if re.fullmatch(regex, input):
+        return True
+    return False
+
+def is_valid_city(input: str) -> bool:
+    city_list = get_all_cities()
+    if input in city_list:
+        return True
+    return False
 
 
 def is_valid_username(input: str) -> bool:
@@ -80,6 +97,41 @@ def is_valid_phone_number(input: str) -> bool:
         return True
     return False
 
+def is_valid_house_number(input: str) -> bool:
+    is_valid_length = 0 < len(input) < 5
+    is_valid = [i.isdigit() for i in input[0:-1]]
+    is_valid_last = input[-1].isalnum()
+
+    if all([is_valid_length, all(is_valid), is_valid_last]):
+        return True
+    return False
+
+def is_valid_street(input: str) -> bool:
+    valid_length = 2 < len(input) < 30
+    valid_chars = all(i.isalnum() or i == " " for i in input)
+    if all([valid_length, valid_chars]):
+        return True
+    return False
+
+def is_valid_zip_code(input: str) -> bool:
+    valid_length = len(input) == 6
+    is_valid_digits = False
+    is_valid_chars = False
+    if valid_length:
+        is_valid_digits = all(i.isdigit() for i in input[0:4])
+        is_valid_chars = input[-2:].isalpha()
+
+    if all([valid_length, is_valid_digits, is_valid_chars]):
+        return True
+
+    return False
+
+
+def is_valid_gender(input: str) -> bool:
+    options = ["Male", "Female", "Other", "Prefer not to say"]
+    if input in options:
+        return True
+
 
 def generate_user_id() -> str:
     """
@@ -97,3 +149,4 @@ def generate_user_id() -> str:
     check_digit = sum_digits % 10
 
     return year_part + random_part + str(check_digit)
+

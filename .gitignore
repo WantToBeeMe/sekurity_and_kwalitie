@@ -8,6 +8,9 @@
 # key files
 *.pem
 
+# logs
+logs.bin
+
 ## OTHER DEFAULT GENERATED STUFF, TO LAZY TO READ ##
 
 # Byte-compiled / optimized / DLL files
