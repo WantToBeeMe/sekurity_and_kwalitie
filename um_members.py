@@ -1,7 +1,9 @@
 import time
-from database import get_current_user, setup_database, close_database, Database, logout_user, get_all_cities
-from component_library import single_select, password_input, set_toast, clear_terminal, set_multiple_toasts
+from database import get_current_user, setup_database, close_database, Database, logout_user, get_all_cities, get_logs
+from component_library import (single_select, password_input, set_toast, clear_terminal, set_multiple_toasts,
+                               COLOR_ENABLED, COLOR_CODES)
 from classes import UserType
+from logging import LogEntry
 
 
 def main():
@@ -92,7 +94,7 @@ def admin_menu():
     elif option_index == 12:  # restore a backup
         set_toast("not implemented [restore a backup]", "blue")
     elif option_index == 13:  # view logs
-        set_toast("not implemented [view logs]", "blue")
+        view_logs()
     else:
         set_toast("Invalid option!", "red")
 
@@ -142,7 +144,7 @@ def super_admin_menu() -> None:
     elif option_index == 16:  # restore a backup
         set_toast("not implemented [restore a backup]", "blue")
     elif option_index == 17:  # view logs
-        set_toast("not implemented [view logs]", "blue")
+        view_logs()
     else:
         set_toast("Invalid option!", "red")
 
@@ -206,6 +208,40 @@ def view_all_users() -> None:
     single_select("All Users - (Username, Full Name, Type)", options, item_interactable=False)
 
 
+def view_logs() -> None:
+    logs = get_logs()
+
+    red = green = white = gray = end = ''
+    if COLOR_ENABLED:
+        red, green, white, gray, end = (
+            COLOR_CODES['red'], COLOR_CODES['green'], COLOR_CODES['white'], COLOR_CODES['gray'], COLOR_CODES['end']
+        )
+    header = f"{white}ID | yyyy-mm-dd hh:mm:ss | {'Username':<11}  {'Description':<30} suspicious{end}"
+    header += "\n"+('-' * len(header))
+
+    risk_detected = False
+    humanized_logs = []
+
+    for log in reversed(logs):  # we want to start from the most recent log
+        suspicious_text = f"{green}Safe{end}"
+        if log.suspicious == "True":
+            risk_detected = True
+            suspicious_text = f"{red}Risk{end}"
+
+        main_part = (f"{gray}{log.id.zfill(3)}{white}| {gray}{log.date} {log.time} {white}| "
+                     f"{log.username:<11.11}  {log.description:<30}{suspicious_text:>4}{end}")
+        if log.additional_info:
+            main_part += f"\n   |{'':>21}| {gray}{log.additional_info}{end}"
+        humanized_logs.append(main_part)
+
+    if risk_detected:
+        set_toast("Risk detected in logs!", "red")
+    else:  # this flag was not a requirement, however, it is really easy to do and adds to the usability of the system
+        set_toast("No risk detected in logs!", "green")
+
+    clear_terminal()
+    single_select(header, humanized_logs, item_interactable=False)
+
 # =================== #
 # ACCOUNT MANAGEMENT  #
 # =================== #
@@ -231,7 +267,7 @@ def register_new_user(role: UserType) -> None:
         set_toast(f"Consultant registered successfully! ({username})", "green")
 
 
-def add_new_member(self) -> None:
+def add_new_member() -> None:
     clear_terminal()
     first_name = input("First name: ")
     last_name = input("Last name: ")

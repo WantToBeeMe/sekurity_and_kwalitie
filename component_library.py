@@ -12,7 +12,13 @@ if __name__ == "__main__":
 
 COLOR_ENABLED = True
 CLEAR_TERMINAL_ENABLED = True
-
+COLOR_CODES = {
+        'gray': '\033[90m',      'red': '\033[91m',
+        'green': '\033[92m',     'yellow': '\033[93m',
+        'blue': '\033[94m',      'magenta': '\033[95m',
+        'cyan': '\033[96m',      'white': '\033[97m',
+        'end': '\033[0m'
+    }
 
 _toast: tuple[str, str] = ("", 'white')
 
@@ -52,16 +58,8 @@ def print_colored(text, color, only_if_color: bool = False) -> None:
             print(text)
         return
 
-    color_codes = {
-        'gray': '\033[90m',      'red': '\033[91m',
-        'green': '\033[92m',     'yellow': '\033[93m',
-        'blue': '\033[94m',      'magenta': '\033[95m',
-        'cyan': '\033[96m',      'white': '\033[97m'
-    }
-
-    color_code = color_codes.get(color.lower(), '')
-    reset_code = '\033[0m'
-    print(f"{color_code}{text}{reset_code}")
+    color_code = COLOR_CODES.get(color.lower(), '')
+    print(f"{color_code}{text}{COLOR_CODES['end']}")
 
 
 def clear_terminal() -> None:
@@ -75,9 +73,9 @@ def clear_terminal() -> None:
     else:
         print("\n" * 5)
 
-    print("=====================================")
+    print('='*80)
     print_colored(*_toast)
-    print("=====================================")
+    print('='*80)
 
 
 def single_select(title: str, options: list[str], allow_back: bool = True, item_interactable: bool = True) -> int:
@@ -111,23 +109,26 @@ def single_select(title: str, options: list[str], allow_back: bool = True, item_
         print(title)
 
         for index, opt in enumerate(options[start_index:end_index]):
-            print(f"{index + 1}. {opt}")
+            if item_interactable:
+                print(f"[{index + 1}] {opt}")
+            else:
+                print(opt)
 
         print("")
         if total_pages > 1:
             print(f"page {page + 1}/{total_pages}")
             if page > 0:
-                print("P. Previous Page")
+                print("[P] Previous Page")
             else:
-                print_colored("P. Previous Page", 'gray', True)
+                print_colored("[P] Previous Page", 'gray', True)
                 # if colors are enabled, we can print they option, but grayed out
                 # however, if not, we should not print it at all (since we don't want to suggest there is)
             if page < total_pages - 1:
-                print("N. Next Page")
+                print("[N] Next Page")
             else:
-                print_colored("N. Next Page", 'gray', True)
+                print_colored("[N] Next Page", 'gray', True)
         if allow_back:
-            print("B. Back")
+            print("[B] Back")
 
         choice = input("\nMake a choice by entering its corresponding character: ").lower()
         set_toast("")

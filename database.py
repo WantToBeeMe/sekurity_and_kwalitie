@@ -3,17 +3,19 @@ import time
 from classes import User, UserType
 from user_validation import *
 from encryption import initialize_keys, encrypt_data_str, decrypt_data, hash_password, compare_passwords
-from logging import Logger
-
+from logging import Logger, LogEntry
 
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
-
 
 _db_connection: sqlite3.Connection = None
 _db_cursor: sqlite3.Cursor = None
 _current_user: User = None
 _logger: Logger = None
+
+
+def get_logs() -> list[LogEntry]:
+    return _logger.get_recent_logs()
 
 
 def get_current_user() -> User:
@@ -88,19 +90,22 @@ def authorize(user_type: UserType):
     If the user is not authorized, then an error will be added to the errors list.
     \n Usage: @authorize(UserType.ADMIN)
     """
+
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             if not is_authorized(user_type):
                 self.errors.append("You are not authorized to perform this action.")
                 return None
             return func(self, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
-# we cant search for the encrtyped data in the db, since the encryption is kinda
+# we cant search for the encrypted data in the db, since the encryption is kinda
 # random since the encryption adds random padding to the input data
-# therefore we have this method to get a list of the users so we can filter on those
+# therefore we have this method to get a list of the users, so we can filter on those
 def _get_all_users() -> list[User]:
     """
     This method returns all users, however, it is not ment to be used outside this file
@@ -112,7 +117,7 @@ def _get_all_users() -> list[User]:
     users = _db_cursor.fetchall()
 
     return_list = []
-    # we cant search for the encrtyped data in the db, since the encryption is kinda
+    # we cant search for the encrypted data in the db, since the encryption is kinda
     # random since the encryption adds random padding to the input data
     for user in users:
         decrypted_user = tuple(decrypt_data(user_data) for user_data in user[1:])
@@ -152,7 +157,6 @@ class Database:
 
         time.sleep(0.2)  # this query must have a little delay to prevent brute force attacks
 
-
         all_users = _get_all_users()
         for user in all_users:
             if user.username == username and compare_passwords(password, user.password_hash):
@@ -163,9 +167,13 @@ class Database:
 
         self.errors.append(f"Invalid username or password!")
         if _logger.login_attempts > 2:
-            _logger.log("...", "Unsuccesful login", f"username: {username} is used for a login atempt wit a wrong password after more than 3 failed attempts", True)
+            _logger.log("...", "Unsuccessful login",
+                        f"username: {username} is used for a login attempt wit a wrong "
+                        "password after more than 3 failed attempts",
+                        True)
         else:
-            _logger.log("...", "Unsuccesful login", f"username: {username} is used for a login atempt wit a wrong password", False)
+            _logger.log("...", "Unsuccessful login",
+                        f"username: {username} is used for a login attempt wit a wrong password", False)
 
         _logger.login_attempts += 1
         return None
@@ -177,13 +185,9 @@ class Database:
         """
         return _get_all_users()
 
-
-    @authorize(UserType.ADMIN)
-    def create_consultant(self, username: str, password: str, first_name: str, last_name: str) -> None:
-        return self._create_user(username, password, UserType.CONSULTANT, first_name, last_name)
-
     @authorize(UserType.CONSULTANT)
-    def create_member(self, member_id: str, first_name: str, last_name: str, age: str, gender: str, weight: float, street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> None:
+    def create_member(self, member_id: str, first_name: str, last_name: str, age: str, gender: str, weight: str,
+                      street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> None:
         first_name_valid = is_valid_name(first_name)
         last_name_valid = is_valid_name(last_name)
         age_valid = is_valid_age(age)
@@ -196,11 +200,14 @@ class Database:
         email_valid = is_valid_email(email)
         city_valid = is_valid_city(city)
 
-        if not all([first_name_valid, last_name_valid, age_valid, gender_valid, weight_valid, phone_valid, house_number_valid, street_valid, zip_code_valid, email_valid, city_valid]):
+        if not all([first_name_valid, last_name_valid, age_valid, gender_valid, weight_valid, phone_valid,
+                    house_number_valid, street_valid, zip_code_valid, email_valid, city_valid]):
             if not first_name_valid:
-                self.errors.append("First name must be between 2 and 30 characters long and can only contain letters and spaces.")
+                self.errors.append(
+                    "First name must be between 2 and 30 characters long and can only contain letters and spaces.")
             if not last_name_valid:
-                self.errors.append("Last name must be between 2 and 30 characters long and can only contain letters and spaces.")
+                self.errors.append(
+                    "Last name must be between 2 and 30 characters long and can only contain letters and spaces.")
             if not age_valid:
                 self.errors.append("Age must be between 0 and 120.")
             if not gender_valid:
@@ -212,7 +219,8 @@ class Database:
             if not house_number_valid:
                 self.errors.append("House number must be a positive integer.")
             if not street_valid:
-                self.errors.append("Street must be between 2 and 50 characters long and can only contain letters, numbers, spaces, and hyphens.")
+                self.errors.append("Street must be between 2 and 50 characters long and can only contain letters,"
+                                   " numbers, spaces, and hyphens.")
             if not zip_code_valid:
                 self.errors.append("Zip code must be a valid postal code format.")
             if not email_valid:
@@ -223,27 +231,32 @@ class Database:
             return
 
         _db_cursor.execute(
-        """
+            """
         INSERT INTO members (id, first_name, last_name, age, gender, weight, street, house_number, zip, city, email, phone)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (
-            encrypt_data_str(member_id),
-            encrypt_data_str(first_name),
-            encrypt_data_str(last_name),
-            encrypt_data_str(age),
-            encrypt_data_str(gender),
-            encrypt_data_str(str(weight)),
-            encrypt_data_str(street),
-            encrypt_data_str(house_number),
-            encrypt_data_str(zip_code),
-            encrypt_data_str(city),
-            encrypt_data_str(email),
-            encrypt_data_str(phone)
+            (
+                encrypt_data_str(member_id),
+                encrypt_data_str(first_name),
+                encrypt_data_str(last_name),
+                encrypt_data_str(age),
+                encrypt_data_str(gender),
+                encrypt_data_str(str(weight)),
+                encrypt_data_str(street),
+                encrypt_data_str(house_number),
+                encrypt_data_str(zip_code),
+                encrypt_data_str(city),
+                encrypt_data_str(email),
+                encrypt_data_str(phone)
+            )
         )
-    )
-    _db_connection.commit()
-    _logger.log(_current_user.username, "Created member", f"Member ID: {member_id}", False)
+
+        _db_connection.commit()
+        _logger.log(_current_user.username, "Created member", f"Member ID: {member_id}", False)
+
+    @authorize(UserType.ADMIN)
+    def create_consultant(self, username: str, password: str, first_name: str, last_name: str) -> None:
+        return self._create_user(username, password, UserType.CONSULTANT, first_name, last_name)
 
     @authorize(UserType.SUPER_ADMIN)
     def create_admin(self, username: str, password: str, first_name: str, last_name: str) -> None:
@@ -254,22 +267,28 @@ class Database:
         last_name_valid = is_valid_name(last_name)
         username_valid = is_valid_username(username)
         password_valid = is_valid_password(password)
-        if not all([first_name_valid,last_name_valid, username_valid, password_valid]):
+        if not all([first_name_valid, last_name_valid, username_valid, password_valid]):
             if not first_name_valid:
-                self.errors.append("First name must be between 2 and 30 characters long and can only contain letters and spaces.")
+                self.errors.append(
+                    "First name must be between 2 and 30 characters long and can only contain letters and spaces.")
             if not first_name_valid:
-                self.errors.append("Last name must be between 2 and 30 characters long and can only contain letters and spaces.")
+                self.errors.append(
+                    "Last name must be between 2 and 30 characters long and can only contain letters and spaces.")
             if not username_valid:
-                self.errors.append("Username must be between 3 and 20 characters long and can only contain letters, numbers, and underscores.")
+                self.errors.append("Username must be between 3 and 20 characters long and can only contain letters,"
+                                   " numbers, and underscores.")
             if not password_valid:
-                self.errors.append("Password must be between 8 and 20 characters long and must contain at least one uppercase letter, one lowercase letter, one number, and one special character.")
-            _logger.log(_current_user.username, "Failed to create user", f"username: {username} because of invalid input", False)
+                self.errors.append("Password must be between 8 and 20 characters long and must contain at least one"
+                                   " uppercase letter, one lowercase letter, one number, and one special character.")
+            _logger.log(_current_user.username, "Failed to create user",
+                        f"username: {username} because of invalid input", False)
             return
 
         all_users = _get_all_users()
         if [user for user in all_users if user.username == username]:
             self.errors.append("A user with this username already exists.")
-            _logger.log(_current_user.username, "Failed to create user", f"username: {username} because it already exists", False)
+            _logger.log(_current_user.username, "Failed to create user",
+                        f"username: {username} because it already exists", False)
             return  # user already exists
 
         _db_cursor.execute(
@@ -298,7 +317,8 @@ class Database:
         if not compare_passwords(old_password, _current_user.password_hash):
             self.errors.append("Incorrect password.")
             if _logger.change_attempts > 2:
-                _logger.log(_current_user.username, "Failed to change password", "Old password is incorrect after more than 3 failed attempts", True)
+                _logger.log(_current_user.username, "Failed to change password",
+                            "Old password is incorrect after more than 3 failed attempts", True)
             else:
                 _logger.log(_current_user.username, "Failed to change password", "Old password is incorrect", False)
             _logger.change_attempts += 1
@@ -306,7 +326,8 @@ class Database:
 
         password_valid = is_valid_password(new_password)
         if not password_valid:
-            self.errors.append("Password must be between 8 and 20 characters long and must contain at least one uppercase letter, one lowercase letter, one number, and one special character.")
+            self.errors.append("Password must be between 8 and 20 characters long and must contain at least "
+                               "one uppercase letter, one lowercase letter, one number, and one special character.")
             _logger.log(_current_user.username, "Failed to change password", "New password is invalid", False)
             return
 

@@ -2,6 +2,10 @@ from os import path
 from datetime import datetime
 from encryption import decrypt_data, encrypt_data
 
+if __name__ == "__main__":
+    raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
+
+
 class LogEntry:
     def __init__(self, id, date, time, username, description, additional_info, suspicious):
         self.id = id
@@ -12,18 +16,22 @@ class LogEntry:
         self.additional_info = additional_info
         self.suspicious = suspicious
 
-    def to_string(self):
-        return f"{self.id};{self.date};{self.time};{self.username};{self.description};{self.additional_info};{self.suspicious}"
+    def to_string(self) -> str:
+        return (f"{self.id};{self.date};{self.time};{self.username};{self.description};"
+                f"{self.additional_info};{self.suspicious}")
 
-    def from_string(string):
-        return LogEntry(*string.split(";"))
+    @classmethod
+    def from_string(cls, string):
+        return cls(*string.split(";"))
+
 
 class Logger:
     def __init__(self, path):
         self.path = path
         self.login_attempts = 0
         self.change_attempts = 0
-    def _get_logs(self):
+
+    def _get_logs(self) -> list[LogEntry]:
         logs = []
 
         if not path.exists(self.path):
@@ -39,27 +47,25 @@ class Logger:
 
         return logs
 
-    def _save_log(self, log):
+    def _save_log(self, log) -> None:
         log_string = log.to_string()
         encrypted_content = encrypt_data(log_string)
         with open(self.path, "ab") as file:
             file.write(encrypted_content)
 
-    def log(self, username, description, additional_info, suspicious):
+    def log(self, username, description, additional_info, suspicious) -> None:
         logs = self._get_logs()
-        new_log = LogEntry(len(logs) + 1, str(datetime.now().date()), str(datetime.now().time().strftime("%H:%M:%S")), username, description, additional_info, suspicious)
+        new_log = LogEntry(len(logs) + 1, str(datetime.now().date()), str(datetime.now().time().strftime("%H:%M:%S")),
+                           username, description, additional_info, suspicious)
         self._save_log(new_log)
 
-
-    def get_recentlogs(self):
+    def get_recent_logs(self) -> list[LogEntry]:
         logs = self._get_logs()
         return logs[-50:]
 
-
-    def get_all_logs(self):
+    def get_all_logs(self) -> list[LogEntry]:
         return self._get_logs()
 
-
-    def reset_fields(self):
+    def reset_fields(self) -> None:
         self.login_attempts = 0
         self.change_attempts = 0
