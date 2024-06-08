@@ -53,7 +53,7 @@ def consultant_menu():
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit password
-        set_toast("not implemented [edit password]", "blue")
+        edit_my_password()
     elif option_index == 2:  # add new member
         add_new_member()
     elif option_index == 3:  # update a member
@@ -78,7 +78,7 @@ def admin_menu():
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit password
-        set_toast("not implemented [edit password]", "blue")
+        edit_my_password()
     elif option_index == 2:  # add new member
         add_new_member()
     elif option_index == 3:  # update a member
@@ -123,7 +123,7 @@ def super_admin_menu() -> None:
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit my password
-        edit_password()
+        edit_my_password()
     elif option_index == 2:  # add new member
         add_new_member()
     elif option_index == 3:  # update a member
@@ -187,7 +187,7 @@ def logout(toast_message: str, toast_color: str) -> None:
     set_toast("Welcome to the Unique Meal App!", "green")
 
 
-def edit_password() -> None:
+def edit_my_password() -> None:
     clear_terminal()
     old_password = password_input("Old password: ")
     new_password = password_input("New password: ")
