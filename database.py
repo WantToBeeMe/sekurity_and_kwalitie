@@ -37,7 +37,7 @@ def setup_database() -> None:
                 first_name TEXT, last_name TEXT, registration_date TEXT)''')
 
     _db_cursor.execute('''CREATE TABLE IF NOT EXISTS members
-                    (id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age TEXT
+                    (id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age TEXT,
                     gender TEXT, weight REAL, street TEXT, house_number TEXT, zip TEXT,
                     city TEXT, email TEXT, phone TEXT)''')
 
@@ -186,8 +186,9 @@ class Database:
         return _get_all_users()
 
     @authorize(UserType.CONSULTANT)
-    def create_member(self, member_id: str, first_name: str, last_name: str, age: str, gender: str, weight: str,
+    def create_member(self, first_name: str, last_name: str, age: str, gender: str, weight: str,
                       street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> None:
+        member_id = generate_user_id()
         first_name_valid = is_valid_name(first_name)
         last_name_valid = is_valid_name(last_name)
         age_valid = is_valid_age(age)
@@ -203,11 +204,11 @@ class Database:
         if not all([first_name_valid, last_name_valid, age_valid, gender_valid, weight_valid, phone_valid,
                     house_number_valid, street_valid, zip_code_valid, email_valid, city_valid]):
             if not first_name_valid:
-                self.errors.append(
-                    "First name must be between 2 and 30 characters long and can only contain letters and spaces.")
+                self.errors.append("First name must be between 2 and 30 characters long "
+                                   "and can only contain letters and spaces.")
             if not last_name_valid:
-                self.errors.append(
-                    "Last name must be between 2 and 30 characters long and can only contain letters and spaces.")
+                self.errors.append("Last name must be between 2 and 30 "
+                                   "characters long and can only contain letters and spaces.")
             if not age_valid:
                 self.errors.append("Age must be between 0 and 120.")
             if not gender_valid:
@@ -234,14 +235,13 @@ class Database:
             """
         INSERT INTO members (id, first_name, last_name, age, gender, weight, street, house_number, zip, city, email, phone)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
+        """,(
                 encrypt_data_str(member_id),
                 encrypt_data_str(first_name),
                 encrypt_data_str(last_name),
                 encrypt_data_str(age),
                 encrypt_data_str(gender),
-                encrypt_data_str(str(weight)),
+                encrypt_data_str(weight),
                 encrypt_data_str(street),
                 encrypt_data_str(house_number),
                 encrypt_data_str(zip_code),

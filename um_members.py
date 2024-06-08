@@ -1,9 +1,9 @@
 import time
-from database import get_current_user, setup_database, close_database, Database, logout_user, get_all_cities, get_logs
+from database import get_current_user, setup_database, close_database, Database, logout_user, get_logs
 from component_library import (single_select, password_input, set_toast, clear_terminal, set_multiple_toasts,
                                COLOR_ENABLED, COLOR_CODES)
 from classes import UserType
-from logging import LogEntry
+from user_validation import CITY_LIST, GENDER_LIST
 
 
 def main():
@@ -50,7 +50,7 @@ def consultant_menu():
     elif option_index == 1:  # edit password
         set_toast("not implemented [edit password]", "blue")
     elif option_index == 2:  # add new member
-        set_toast("not implemented [add new member]", "blue")
+        add_new_member()
     elif option_index == 3:  # update a member
         set_toast("not implemented [update a member]", "blue")
     elif option_index == 4:  # search for a member
@@ -72,7 +72,7 @@ def admin_menu():
     elif option_index == 1:  # edit password
         set_toast("not implemented [edit password]", "blue")
     elif option_index == 2:  # add new member
-        set_toast("not implemented [add new member]", "blue")
+        add_new_member()
     elif option_index == 3:  # update a member
         set_toast("not implemented [update a member]", "blue")
     elif option_index == 4:  # delete a member
@@ -114,7 +114,7 @@ def super_admin_menu() -> None:
     elif option_index == 1:  # edit my password
         edit_password()
     elif option_index == 2:  # add new member
-        set_toast("not implemented [add new member]", "blue")
+        add_new_member()
     elif option_index == 3:  # update a member
         set_toast("not implemented [update a member]", "blue")
     elif option_index == 4:  # delete a member
@@ -240,7 +240,7 @@ def view_logs() -> None:
         set_toast("No risk detected in logs!", "green")
 
     clear_terminal()
-    single_select(header, humanized_logs, item_interactable=False)
+    single_select(header, humanized_logs, item_interactable=False, persist_toast=True)
 
 # =================== #
 # ACCOUNT MANAGEMENT  #
@@ -268,21 +268,42 @@ def register_new_user(role: UserType) -> None:
 
 
 def add_new_member() -> None:
+    gray = COLOR_CODES['gray'] if COLOR_ENABLED else ''
+
+    set_toast("step 1/4", "yellow")
     clear_terminal()
+    print("Personal information:")
     first_name = input("First name: ")
     last_name = input("Last name: ")
     age = input("Age: ")
-    gender = single_select("Gender:", ["Male", "Female", "Other", "Prefer not to say"], allow_back=False)
     weight = input("Weight: ")
+
+    set_toast(f"step 2/4 {gray}{first_name} {last_name}", "yellow")
+    clear_terminal()
+    gender = GENDER_LIST[single_select("Gender:", GENDER_LIST, allow_back=False, persist_toast=True)]
+
+    set_toast(f"step 3/4 {gray}{first_name} {last_name} ({gender})", "yellow")
+    clear_terminal()
+    print("Contact information: ")
+
+    email = input("Email: ")
+    phone_number = input("Phone: +31-6- (only last 8 digits):")
     street = input("Street: ")
     house_number = input("House number: ")
     zip_code = input("Zip code: ")
-    city = single_select("City:", get_all_cities(), allow_back=False)
-    email = input("Email: ")
-    phone = input("Phone: +31-6- (only last 8 digits):")
 
-    # db = Database()
-    # db.create_member()
+    set_toast(f"step 4/4 {gray}{first_name} {last_name} ({gender}) {email}/{phone_number}", "yellow")
+    clear_terminal()
+    city_name = CITY_LIST[single_select("City:", CITY_LIST, allow_back=False, persist_toast=True)]
+
+    db = Database()
+    db.create_member(first_name, last_name, age, gender, weight, street,
+                     house_number, zip_code, city_name, email, phone_number)
+
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+    else:
+        set_toast(f"Member created successfully! ({first_name} {last_name})", "green")
 
 
 if __name__ == "__main__":

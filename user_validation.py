@@ -5,15 +5,15 @@ from datetime import datetime
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
 
-
 """
 All validation functions are coded in a way such that they always return false unless all conditions are met.
 This way we whitelist only the correct inputs.
 """
 
-def get_all_cities() -> list[str]:
-    cities = ["Amsterdam", "Rotterdam", "Utrecht", "Eindhoven", "Tilburg", "Groningen", "Breda", "Apeldoorn", "Nijmegen", "Haarlem"]
-    return cities
+CITY_LIST = ["Amsterdam", "Rotterdam", "Utrecht", "Eindhoven", "Tilburg", "Groningen", "Breda", "Apeldoorn",
+             "Nijmegen", "Haarlem"]
+GENDER_LIST = ["Male", "Female", "Other", "Prefer not to say"]
+
 
 def is_valid_email(input: str) -> bool:
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
@@ -21,18 +21,16 @@ def is_valid_email(input: str) -> bool:
         return True
     return False
 
+
 def is_valid_city(input: str) -> bool:
-    city_list = get_all_cities()
-    if input in city_list:
-        return True
-    return False
+    return input in CITY_LIST
 
 
 def is_valid_username(input: str) -> bool:
     allowed_chars = "_'."
     valid_length = 8 <= len(input) <= 10
     if not valid_length:
-        return False # we return early since the length can be 0, and will cause an error in the next checks
+        return False  # we return early since the length can be 0, and will cause an error in the next checks
     valid_start_char = input[0].isalpha() or input[0] == "_"
     valid_chars = all(i.isalnum() or i in allowed_chars for i in input)
 
@@ -45,7 +43,7 @@ def is_valid_username(input: str) -> bool:
 def is_valid_password(input: str) -> bool:
     allowed_chars = "~!@#$%&_-+=`|\\(){}[]:;'<>,.?/"
 
-    valid_length= 12 <= len(input) <= 30
+    valid_length = 12 <= len(input) <= 30
     has_lower = any(char.islower() for char in input)
     has_upper = any(char.isupper() for char in input)
     has_digit = any(char.isdigit() for char in input)
@@ -97,6 +95,7 @@ def is_valid_phone_number(input: str) -> bool:
         return True
     return False
 
+
 def is_valid_house_number(input: str) -> bool:
     is_valid_length = 0 < len(input) < 5
     is_valid = [i.isdigit() for i in input[0:-1]]
@@ -106,12 +105,14 @@ def is_valid_house_number(input: str) -> bool:
         return True
     return False
 
+
 def is_valid_street(input: str) -> bool:
     valid_length = 2 < len(input) < 30
     valid_chars = all(i.isalnum() or i == " " for i in input)
     if all([valid_length, valid_chars]):
         return True
     return False
+
 
 def is_valid_zip_code(input: str) -> bool:
     valid_length = len(input) == 6
@@ -128,9 +129,7 @@ def is_valid_zip_code(input: str) -> bool:
 
 
 def is_valid_gender(input: str) -> bool:
-    options = ["Male", "Female", "Other", "Prefer not to say"]
-    if input in options:
-        return True
+    return input in GENDER_LIST
 
 
 def generate_user_id() -> str:
@@ -149,4 +148,3 @@ def generate_user_id() -> str:
     check_digit = sum_digits % 10
 
     return year_part + random_part + str(check_digit)
-

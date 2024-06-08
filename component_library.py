@@ -13,26 +13,34 @@ if __name__ == "__main__":
 COLOR_ENABLED = True
 CLEAR_TERMINAL_ENABLED = True
 COLOR_CODES = {
-        'gray': '\033[90m',      'red': '\033[91m',
-        'green': '\033[92m',     'yellow': '\033[93m',
-        'blue': '\033[94m',      'magenta': '\033[95m',
-        'cyan': '\033[96m',      'white': '\033[97m',
-        'end': '\033[0m'
-    }
+    'gray': '\033[90m', 'red': '\033[91m',
+    'green': '\033[92m', 'yellow': '\033[93m',
+    'blue': '\033[94m', 'magenta': '\033[95m',
+    'cyan': '\033[96m', 'white': '\033[97m',
+    'end': '\033[0m'
+}
 
-_toast: tuple[str, str] = ("", 'white')
+_toast: list[tuple[str, str]] = [("", 'white')]
 
 
-def set_multiple_toasts(messages: list[str], color: str = 'gray', max_rows: int = 3) -> None:
+def set_all_toasts(messages: list[tuple[str, str]]) -> None:
     """
     sets multiple toast messages that will be displayed at the top of the screen once the screen is cleared again
-    :param max_rows: the maximum number of rows to display, taken from the end of the list
+    :param messages:  a list of tuples with the message and the color of the message
+    """
+    global _toast
+    _toast = messages
+
+
+def set_multiple_toasts(messages: list[str], color: str = 'gray') -> None:
+    """
+    sets multiple toast messages that will be displayed at the top of the screen once the screen is cleared again
     :param messages:  the messages to display
     :param color:  the color of the message (gray, red, green, yellow, blue, magenta, cyan, white)
     """
     # limits shown errors to the last three, otherwise the toast is getting really ugly. no real other reason
     global _toast
-    _toast = ("\n".join(messages[-max_rows:]), color)
+    _toast = [(m, color) for m in messages]
 
 
 def set_toast(message: str, color: str = 'gray') -> None:
@@ -42,7 +50,7 @@ def set_toast(message: str, color: str = 'gray') -> None:
     :param color:  the color of the message (gray, red, green, yellow, blue, magenta, cyan, white)
     """
     global _toast
-    _toast = (message, color)
+    _toast = [(message, color)]
 
 
 def print_colored(text, color, only_if_color: bool = False) -> None:
@@ -73,12 +81,14 @@ def clear_terminal() -> None:
     else:
         print("\n" * 5)
 
-    print('='*80)
-    print_colored(*_toast)
-    print('='*80)
+    print('=' * 80)
+    for t in _toast[-4:]:
+        print_colored(*t)
+    print('=' * 80)
 
 
-def single_select(title: str, options: list[str], allow_back: bool = True, item_interactable: bool = True) -> int:
+def single_select(title: str, options: list[str],
+                  allow_back: bool = True, item_interactable: bool = True, persist_toast: bool = False) -> int:
     """
     this method will display a menu to the user with a list of options that the user can choose from.
     it will automatically handle pages if those are needed.
@@ -87,10 +97,19 @@ def single_select(title: str, options: list[str], allow_back: bool = True, item_
     :param title:  the title of the menu
     :param options:  a list of strings that the user can choose from
     :param allow_back:  if the user should be able to go back
+    :param persist_toast: if the toast you created before this single select should persist at refresh
     :return:  the index of the item in the list that the user selected or if the user selected back, it returns -1
     """
     if not item_interactable:
         allow_back = True  # if the items are not selectable, then the user should be able to go back
+
+    persisted_toasts: list[tuple[str, str]] = _toast.copy() if persist_toast else []
+
+    def set_select_toast(message: str, color: str = 'white'):
+        toasts = persisted_toasts.copy()
+        if message or not toasts:
+            toasts.append((message, color))
+        set_all_toasts(toasts)
 
     max_per_page = 9
     page = 0
@@ -131,8 +150,9 @@ def single_select(title: str, options: list[str], allow_back: bool = True, item_
             print("[B] Back")
 
         choice = input("\nMake a choice by entering its corresponding character: ").lower()
-        set_toast("")
+        set_select_toast("")
         if allow_back and (choice == 'b' or choice == 'back'):
+            set_toast("")
             return -1
         elif choice.isdigit():
             choice_index = int(choice)
@@ -142,23 +162,23 @@ def single_select(title: str, options: list[str], allow_back: bool = True, item_
             if 0 < choice_index <= max_per_page and real_index < len(options):
                 if item_interactable:
                     return real_index
-                set_toast("The items in the list cant be interacted with.", 'red')
+                set_select_toast("The items in the list cant be interacted with.", 'red')
                 continue
 
         elif choice == 'p' or choice == 'previous':
             if page <= 0:
-                set_toast("You are already on the first page, you cant go back any further", 'yellow')
+                set_select_toast("You are already on the first page, you cant go back any further", 'yellow')
             else:
                 page -= 1
             continue
         elif choice == 'n' or choice == 'next':
             if page >= total_pages - 1:
-                set_toast("You are already on the last page, you cant go forward any further", 'yellow')
+                set_select_toast("You are already on the last page, you cant go forward any further", 'yellow')
             else:
                 page += 1
             continue
 
-        set_toast(f"Invalid input '{choice}'", 'red')
+        set_select_toast(f"Invalid input '{choice}'", 'red')
 
 
 def password_input(prompt: str) -> str:
@@ -167,6 +187,7 @@ def password_input(prompt: str) -> str:
     :param prompt: the prompt to display to the user
     :return: the password that the user entered
     """
+
     # if "PYCHARM_HOSTED" in os.environ or "PYCHARM" in os.environ:
     #     # if you are in PyCharm virtual terminal, we can't use the hide password feature
     #     return input(prompt)
