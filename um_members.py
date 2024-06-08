@@ -1,5 +1,6 @@
 import time
-from database import get_current_user, setup_database, close_database, Database, logout_user, get_logs
+from database import (get_current_user, setup_database, close_database, Database, logout_user,
+                      get_logs, log_risk_detected)
 from component_library import (single_select, password_input, set_toast, clear_terminal, set_multiple_toasts,
                                COLOR_ENABLED, COLOR_CODES)
 from classes import UserType
@@ -30,7 +31,9 @@ def main():
 # =================== #
 
 def startup_menu():
-    options = ["Login", "Exit"]
+    red = COLOR_CODES['red'] if COLOR_ENABLED else ''
+    reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    options = ["Login", f"{red}Exit{reset}"]
 
     option_index = single_select("Main Menu", options, allow_back=False)
 
@@ -42,7 +45,9 @@ def startup_menu():
 
 
 def consultant_menu():
-    options = ["Logout", "Edit my password", "Add new member", "Edit a member", "Search for a member"]
+    red = COLOR_CODES['red'] if COLOR_ENABLED else ''
+    reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "Edit a member", "Search for a member"]
     option_index = single_select("Main Menu", options, allow_back=False)
 
     if option_index == 0:  # logout
@@ -60,10 +65,13 @@ def consultant_menu():
 
 
 def admin_menu():
-    options = ["Logout", "Edit my password", "Add new member", "Edit a member", "Delete a member",
+    red = COLOR_CODES['red'] if COLOR_ENABLED else ''
+    reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    log_star = f"{COLOR_CODES['red' if log_risk_detected() else 'green']}*{reset}" if COLOR_ENABLED else ''
+    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "Edit a member", "Delete a member",
                "Search for a member",  # note that the consultant can NOT delete a member
                "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
-               "Reset a consultant's password", "Make a backup", "Restore a backup", "View logs"]
+               "Reset a consultant's password", "Make a backup", "Restore a backup", f"View logs {log_star}"]
     # editing and deleting can maybe be combined
     option_index = single_select("Main Menu", options, allow_back=False)
 
@@ -100,12 +108,15 @@ def admin_menu():
 
 
 def super_admin_menu() -> None:
-    options = ["Logout", "Edit my password", "Add new member", "Edit a member", "Delete a member",
+    red = COLOR_CODES['red'] if COLOR_ENABLED else ''
+    reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    log_star = f"{COLOR_CODES['red' if log_risk_detected() else 'green']}*{reset}" if COLOR_ENABLED else ''
+    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "Edit a member", "Delete a member",
                "Search for a member",  # note that the consultant can NOT delete a member
                "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
                "Reset a consultant's password", "Register new admin", "Edit an admin", "Delete an admin",
                "Reset an admins password",
-               "Make a backup", "Restore a backup", "View logs"]
+               "Make a backup", "Restore a backup", f"View logs {log_star}"]
     # editing and deleting can maybe be combined
     option_index = single_select("Main Menu", options, allow_back=False)
 
@@ -219,25 +230,19 @@ def view_logs() -> None:
     header = f"{white}ID | yyyy-mm-dd hh:mm:ss | {'Username':<11}  {'Description':<30} suspicious{end}"
     header += "\n"+('-' * len(header))
 
-    risk_detected = False
+    if log_risk_detected():
+        set_toast("Risk detected in logs!", "red")
+    else:  # this flag was not a requirement, however, it is really easy to do and adds to the usability of the system
+        set_toast("No risk detected in logs!", "green")
+
     humanized_logs = []
-
     for log in reversed(logs):  # we want to start from the most recent log
-        suspicious_text = f"{green}Safe{end}"
-        if log.suspicious == "True":
-            risk_detected = True
-            suspicious_text = f"{red}Risk{end}"
-
+        suspicious_text =f"{red}Risk{end}" if log.suspicious == "True" else f"{green}Safe{end}"
         main_part = (f"{gray}{log.id.zfill(3)}{white}| {gray}{log.date} {log.time} {white}| "
                      f"{log.username:<11.11}  {log.description:<30}{suspicious_text:>4}{end}")
         if log.additional_info:
             main_part += f"\n   |{'':>21}| {gray}{log.additional_info}{end}"
         humanized_logs.append(main_part)
-
-    if risk_detected:
-        set_toast("Risk detected in logs!", "red")
-    else:  # this flag was not a requirement, however, it is really easy to do and adds to the usability of the system
-        set_toast("No risk detected in logs!", "green")
 
     clear_terminal()
     single_select(header, humanized_logs, item_interactable=False, persist_toast=True)

@@ -15,7 +15,11 @@ _logger: Logger = None
 
 
 def get_logs() -> list[LogEntry]:
-    return _logger.get_recent_logs()
+    return _logger.get_all_logs()
+
+
+def log_risk_detected() -> bool:
+    return any(log.suspicious == "True" for log in get_logs())
 
 
 def get_current_user() -> User:
