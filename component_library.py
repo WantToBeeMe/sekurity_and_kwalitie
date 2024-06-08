@@ -1,5 +1,6 @@
 import os  # all usages -> checking name of os ; clearing console
 import sys  # all usages -> reading single key press ; writing stdout ; flushing stdout
+import math
 
 # IMPORTANT:
 #   This file can be considered the components' library. It contains all the reusable code snippets
@@ -19,6 +20,10 @@ COLOR_CODES = {
     'cyan': '\033[96m', 'white': '\033[97m',
     'end': '\033[0m'
 }
+
+ASSUMED_PAGE_WIDTH = 80
+# this variable does not force any string to be 80 characters long, so any longer string will still be displayed
+# however, if something has to be calculated based on the width of the page, then this is the assumed width
 
 _toast: list[tuple[str, str]] = [("", 'white')]
 
@@ -81,14 +86,69 @@ def clear_terminal() -> None:
     else:
         print("\n" * 5)
 
-    print('=' * 80)
+    print('=' * ASSUMED_PAGE_WIDTH)
     for t in _toast[-4:]:
         print_colored(*t)
-    print('=' * 80)
+    print('=' * ASSUMED_PAGE_WIDTH)
 
 
-def single_select(title: str, options: list[str],
-                  allow_back: bool = True, item_interactable: bool = True, persist_toast: bool = False) -> int:
+def column_based_single_select(title: str, options: list[str], column_count: int = 2,
+                               persist_toast: bool = False) -> int:
+    """
+    this method will display a menu to the user with a list of options that the user can choose from.
+    it will automatically put the options in columns.
+    :param title:  the title of the menu
+    :param options:  a list of strings that the user can choose from
+    :param column_count:  the amount of columns that the options should be displayed in
+    :param persist_toast:  if the toast you created before this single select should persist at refresh
+    :return:  the index of the item in the list that the user selected or if the user selected back, it returns -1
+    """
+
+    persisted_toasts: list[tuple[str, str]] = _toast.copy() if persist_toast else []
+    width_per_column = ASSUMED_PAGE_WIDTH // column_count
+    amount_of_rows = math.ceil(len(options) / column_count)
+
+    stringified_options = [f"[{index + 1}] {opt}" for index, opt in enumerate(options)]
+
+    skip_first_iteration_clear = True
+    while True:
+        if skip_first_iteration_clear:
+            skip_first_iteration_clear = False
+        else:
+            clear_terminal()
+        print(title)
+
+        for row_index in range(amount_of_rows):
+            current_row: list[str] = []
+            for column_index in range(column_count):
+                index = row_index + column_index * amount_of_rows
+                if index >= len(options):
+                    break
+                selected_option = stringified_options[index]
+                total_option_width = width_per_column
+                # in this loop there is a color correction. (since these are characters and thus have a with.
+                # but they won't be displayed so are not actually a width, therefore we need to correct for that)
+                for color_code in COLOR_CODES.values():
+                    # no check needed here for COLOR_ENABLED, since then there should not even be color here
+                    total_option_width += selected_option.count(color_code) * color_code.__len__()
+                current_row.append(selected_option.ljust(total_option_width)[:total_option_width])
+            print(''.join(current_row))
+
+        choice = input("\nMake a choice by entering its corresponding character: ").lower()
+        if choice.isdigit():
+            choice_index = int(choice)
+            real_index = choice_index - 1
+            if 0 <= real_index < len(options):
+                set_toast("")
+                return real_index
+
+        toast = persisted_toasts.copy()
+        toast.append((f"Invalid input '{choice}'", 'red'))
+        set_all_toasts(toast)
+
+
+def paginated_single_select(title: str, options: list[str], allow_back: bool = True,
+                            item_interactable: bool = True, persist_toast: bool = False) -> int:
     """
     this method will display a menu to the user with a list of options that the user can choose from.
     it will automatically handle pages if those are needed.
@@ -97,7 +157,7 @@ def single_select(title: str, options: list[str],
     :param title:  the title of the menu
     :param options:  a list of strings that the user can choose from
     :param allow_back:  if the user should be able to go back
-    :param persist_toast: if the toast you created before this single select should persist at refresh
+    :param persist_toast:  if the toast you created before this single select should persist at refresh
     :return:  the index of the item in the list that the user selected or if the user selected back, it returns -1
     """
     if not item_interactable:

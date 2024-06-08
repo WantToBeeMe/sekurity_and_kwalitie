@@ -1,8 +1,8 @@
 import time
 from database import (get_current_user, setup_database, close_database, Database, logout_user,
                       get_logs, log_risk_detected)
-from component_library import (single_select, password_input, set_toast, clear_terminal, set_multiple_toasts,
-                               COLOR_ENABLED, COLOR_CODES)
+from component_library import (paginated_single_select, password_input, set_toast, clear_terminal, set_multiple_toasts,
+                               COLOR_ENABLED, COLOR_CODES, column_based_single_select)
 from classes import UserType
 from user_validation import CITY_LIST, GENDER_LIST
 
@@ -35,7 +35,7 @@ def startup_menu():
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
     options = ["Login", f"{red}Exit{reset}"]
 
-    option_index = single_select("Main Menu", options, allow_back=False)
+    option_index = column_based_single_select("Main Menu", options, column_count=1)
 
     if option_index == 0:
         login()
@@ -48,7 +48,7 @@ def consultant_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
     options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "Edit a member", "Search for a member"]
-    option_index = single_select("Main Menu", options, allow_back=False)
+    option_index = column_based_single_select("Main Menu", options)
 
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
@@ -73,7 +73,7 @@ def admin_menu():
                "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
                "Reset a consultant's password", "Make a backup", "Restore a backup", f"View logs {log_star}"]
     # editing and deleting can maybe be combined
-    option_index = single_select("Main Menu", options, allow_back=False)
+    option_index = column_based_single_select("Main Menu", options)
 
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
@@ -118,7 +118,7 @@ def super_admin_menu() -> None:
                "Reset an admins password",
                "Make a backup", "Restore a backup", f"View logs {log_star}"]
     # editing and deleting can maybe be combined
-    option_index = single_select("Main Menu", options, allow_back=False)
+    option_index = column_based_single_select("Main Menu", options)
 
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
@@ -216,7 +216,7 @@ def view_all_users() -> None:
         f"{user.username} ({user.first_name} {user.last_name}) {user.get_role_name()} "
         for user in users
     ]
-    single_select("All Users - (Username, Full Name, Type)", options, item_interactable=False)
+    paginated_single_select("All Users - (Username, Full Name, Type)", options, item_interactable=False)
 
 
 def view_logs() -> None:
@@ -245,7 +245,7 @@ def view_logs() -> None:
         humanized_logs.append(main_part)
 
     clear_terminal()
-    single_select(header, humanized_logs, item_interactable=False, persist_toast=True)
+    paginated_single_select(header, humanized_logs, item_interactable=False, persist_toast=True)
 
 # =================== #
 # ACCOUNT MANAGEMENT  #
@@ -285,7 +285,7 @@ def add_new_member() -> None:
 
     set_toast(f"step 2/4 {gray}{first_name} {last_name}", "yellow")
     clear_terminal()
-    gender = GENDER_LIST[single_select("Gender:", GENDER_LIST, allow_back=False, persist_toast=True)]
+    gender = GENDER_LIST[column_based_single_select("Gender:", GENDER_LIST, persist_toast=True)]
 
     set_toast(f"step 3/4 {gray}{first_name} {last_name} ({gender})", "yellow")
     clear_terminal()
@@ -299,7 +299,7 @@ def add_new_member() -> None:
 
     set_toast(f"step 4/4 {gray}{first_name} {last_name} ({gender}) {email}/{phone_number}", "yellow")
     clear_terminal()
-    city_name = CITY_LIST[single_select("City:", CITY_LIST, allow_back=False, persist_toast=True)]
+    city_name = CITY_LIST[column_based_single_select("City:", CITY_LIST, persist_toast=True)]
 
     db = Database()
     db.create_member(first_name, last_name, age, gender, weight, street,
