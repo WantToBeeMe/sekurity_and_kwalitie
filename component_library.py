@@ -21,7 +21,7 @@ COLOR_CODES = {
     'end': '\033[0m'
 }
 
-ASSUMED_PAGE_WIDTH = 80
+ASSUMED_PAGE_WIDTH = 90
 # this variable does not force any string to be 80 characters long, so any longer string will still be displayed
 # however, if something has to be calculated based on the width of the page, then this is the assumed width
 

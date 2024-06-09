@@ -212,11 +212,13 @@ def view_all_users() -> None:
         set_multiple_toasts(db.get_errors(), "red")
         return
 
-    options = [
-        f"{user.username} ({user.first_name} {user.last_name}) {user.get_role_name()} "
-        for user in users
-    ]
-    paginated_single_select("All Users - (Username, Full Name, Type)", options, item_interactable=False)
+    header = f"{'Username':<12.12} {'Full Name':<30.30} {'Role':<11.11}"
+    header += "\n" + ('-' * len(header))
+    options = []
+    for user in users:
+        real_name = f"{user.first_name} {user.last_name}"
+        options.append(f"{user.username:<12.12} {real_name:<30.30} {user.get_role_name()}")
+    paginated_single_select(header, options, item_interactable=False)
 
 
 def view_logs() -> None:
