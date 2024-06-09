@@ -3,7 +3,7 @@ from database import (get_current_user, setup_database, close_database, Database
                       get_logs, log_risk_detected)
 from component_library import (paginated_single_select, password_input, set_toast, clear_terminal, set_multiple_toasts,
                                COLOR_ENABLED, COLOR_CODES, column_based_single_select)
-from classes import UserType
+from classes import UserType, Member, User
 from user_validation import CITY_LIST, GENDER_LIST
 
 
@@ -33,7 +33,7 @@ def main():
 def startup_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
-    options = ["Login", f"{red}Exit{reset}"]
+    options = ["Login", f"{red}Exit{reset}", "temporary login"]
 
     option_index = column_based_single_select("Main Menu", options, column_count=1)
 
@@ -42,12 +42,15 @@ def startup_menu():
     elif option_index == 1:
         # we don't have to close db here, it will be done in the final block
         exit(0)
+    elif option_index == 2:  # this and the temporary option should be deleted on turn-in
+        db = Database()
+        db.login_user("super_admin", "Admin_123?")
 
 
 def consultant_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
-    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "Edit a member", "Search for a member"]
+    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "View member"]
     option_index = column_based_single_select("Main Menu", options)
 
     if option_index == 0:  # logout
@@ -56,10 +59,8 @@ def consultant_menu():
         edit_my_password()
     elif option_index == 2:  # add new member
         add_new_member()
-    elif option_index == 3:  # update a member
-        set_toast("not implemented [update a member]", "blue")
-    elif option_index == 4:  # search for a member
-        set_toast("not implemented [search for a member]", "blue")
+    elif option_index == 3:  # view member
+        view_all_members()
     else:
         set_toast("Invalid option!", "red")
 
@@ -82,11 +83,13 @@ def admin_menu():
     elif option_index == 2:  # add new member
         add_new_member()
     elif option_index == 3:  # update a member
+        # TODO: might never be implemented since it can all be included in the view_all_users method
         set_toast("not implemented [update a member]", "blue")
     elif option_index == 4:  # delete a member
+        # TODO: might never be implemented since it can all be included in the view_all_users method
         set_toast("not implemented [delete a member]", "blue")
     elif option_index == 5:  # search for a member
-        set_toast("not implemented [search for a member]", "blue")
+        view_all_members()
     elif option_index == 6:  # view all users
         view_all_users()
     elif option_index == 7:  # register new consultant
@@ -127,11 +130,13 @@ def super_admin_menu() -> None:
     elif option_index == 2:  # add new member
         add_new_member()
     elif option_index == 3:  # update a member
+        # TODO: might never be implemented since it can all be included in the view_all_users method
         set_toast("not implemented [update a member]", "blue")
     elif option_index == 4:  # delete a member
+        # TODO: might never be implemented since it can all be included in the view_all_users method
         set_toast("not implemented [delete a member]", "blue")
     elif option_index == 5:  # search for a member
-        set_toast("not implemented [search for a member]", "blue")
+        view_all_members()
     elif option_index == 6:  # view all users
         view_all_users()
     elif option_index == 7:  # register new consultant
@@ -159,6 +164,113 @@ def super_admin_menu() -> None:
     else:
         set_toast("Invalid option!", "red")
 
+
+# =================== #
+#    MEMBER RELATED   #
+# =================== #
+
+def view_all_members():
+    end = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
+    db = Database()
+    members = db.get_all_members()
+    if members is None:
+        set_multiple_toasts(db.get_errors(), "red")
+        return
+
+    header = f"{'ID':<11.11} {'Full Name':<30.30} {'Age':<4.4} {'Email':<30.30}"
+    header += "\n" + ('-' * len(header))
+    search_term = ''  # must be able to search on: id, first name, last name, address, email address and phone number
+    while True:
+        filtered_members = []
+        for mem in members:
+            matches_search = not search_term
+            if search_term:
+                matches_search = (search_term.lower() in mem.first_name.lower() or
+                                  search_term.lower() in mem.last_name.lower() or
+                                  search_term.lower() in mem.street_name.lower() or
+                                  search_term.lower() in mem.email.lower() or
+                                  search_term in mem.phone)
+            if matches_search:
+                filtered_members.append(mem)
+
+        options = []
+        for mem in filtered_members:
+            real_name = f"{mem.first_name} {mem.last_name}"
+            options.append(f"{str(mem.id):<11.11} {real_name:<30.30} {str(mem.age):<4.4} {mem.email:<30.30}")
+
+        if not options:
+            set_toast("No results found!", "red")
+        clear_terminal()
+        page_result = paginated_single_select(header, options, persist_toast=True,
+                                              persisted_options={'B': "Back", "S": f"{yellow}Search{end}"})
+
+        if page_result == -1:
+            return
+        elif page_result >= 0:
+            _view_member(filtered_members[page_result])
+            # the page does not return here. So we make use of the stack
+            # to go back in to this loop after the _view_member function returns
+        elif page_result == -2:
+            clear_terminal()
+            search_term = input("Search term: ")
+            if search_term:
+                set_toast(f"Searching for '{search_term}'", "yellow")
+
+
+def _view_member(member: Member):
+    end = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
+    red = COLOR_CODES['red'] if COLOR_ENABLED else ''
+    clear_terminal()
+    print(f"ID: {member.id}")
+    print(f"Name: {member.first_name} {member.last_name}")
+    print(f"Age: {member.age}")
+    print(f"Gender: {member.gender}")
+    print(f"Weight: {member.weight}")
+    print(f"Address: {member.street_name} {member.house_number}, {member.zip_code} {member.city}")
+    print(f"Email: {member.email}")
+    print(f"Phone: {member.phone}")
+
+    allowed_to_delete = get_current_user().type == UserType.SUPER_ADMIN or get_current_user().type == UserType.ADMIN
+    # note that his boolean only ensures that the option is shown (or not)
+    # however, there is also an extra authorization check for all queries. including this delete query
+    # meaning that even if someone would get through our cool interface,
+    # they would still not be able to delete a member if not authorized
+
+    print(f"\n[E] {yellow}edit member{end}")
+    if allowed_to_delete:
+        print(f"[D] {red}delete member{end}")
+
+    chose = input("\nChose an option or press any key to go back: ")
+    if chose.lower() == "e" or chose.lower() == "edit":
+        _edit_member(member)
+    elif allowed_to_delete and (chose.lower() == "d" or chose.lower() == "delete"):
+        _delete_member(member)
+
+
+def _edit_member(member: Member):
+    # TODO:
+    #  - way 1: create input field for each attribute, show current value,
+    #  -    and just allow them to press enter to keep it, or type it otherwise
+    #       (execpt select fields, those cant be empty due to the way i implemented it)
+    #       (way one can maybe reuse a bit of the create_member code )
+    #  - way 2: list all the attributes and allow them to select which one to edit
+    set_toast("NOT IMPLEMENTED", "blue")
+    clear_terminal()
+    time.sleep(1)
+    set_toast("")
+
+
+def _delete_member(member: Member):
+    # TODO:
+    #  - are you sure you want to delete this member?
+    #  - delete member query in db
+
+    set_toast("NOT IMPLEMENTED", "blue")
+    clear_terminal()
+    time.sleep(1)
+    set_toast("")
 
 # =================== #
 #   THE OTHER STUFF   #
@@ -197,7 +309,7 @@ def edit_my_password() -> None:
         return
 
     db = Database()
-    db.edit_password(old_password, new_password)
+    db.edit_my_password(old_password, new_password)
     if any(db.get_errors()):
         set_multiple_toasts(db.get_errors(), "red")
     else:
@@ -218,7 +330,7 @@ def view_all_users() -> None:
     for user in users:
         real_name = f"{user.first_name} {user.last_name}"
         options.append(f"{user.username:<12.12} {real_name:<30.30} {user.get_role_name()}")
-    paginated_single_select(header, options, item_interactable=False)
+    paginated_single_select(header, options, item_interactable=False, persisted_options={'B': "Back"})
 
 
 def view_logs() -> None:
@@ -230,7 +342,7 @@ def view_logs() -> None:
             COLOR_CODES['red'], COLOR_CODES['green'], COLOR_CODES['white'], COLOR_CODES['gray'], COLOR_CODES['end']
         )
     header = f"{white}ID | yyyy-mm-dd hh:mm:ss | {'Username':<11}  {'Description':<30} suspicious{end}"
-    header += "\n"+('-' * len(header))
+    header += "\n" + ('-' * len(header))
 
     if log_risk_detected():
         set_toast("Risk detected in logs!", "red")
@@ -239,7 +351,7 @@ def view_logs() -> None:
 
     humanized_logs = []
     for log in reversed(logs):  # we want to start from the most recent log
-        suspicious_text =f"{red}Risk{end}" if log.suspicious == "True" else f"{green}Safe{end}"
+        suspicious_text = f"{red}Risk{end}" if log.suspicious == "True" else f"{green}Safe{end}"
         main_part = (f"{gray}{log.id.zfill(3)}{white}| {gray}{log.date} {log.time} {white}| "
                      f"{log.username:<11.11}  {log.description:<30}{suspicious_text:>4}{end}")
         if log.additional_info:
@@ -247,7 +359,9 @@ def view_logs() -> None:
         humanized_logs.append(main_part)
 
     clear_terminal()
-    paginated_single_select(header, humanized_logs, item_interactable=False, persist_toast=True)
+    paginated_single_select(header, humanized_logs, item_interactable=False,
+                            persist_toast=True, persisted_options={'B': "Back"})
+
 
 # =================== #
 # ACCOUNT MANAGEMENT  #

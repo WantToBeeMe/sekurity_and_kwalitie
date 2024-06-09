@@ -1,6 +1,6 @@
 import sqlite3
 import time
-from classes import User, UserType
+from classes import User, UserType, Member
 from user_validation import *
 from encryption import initialize_keys, encrypt_data_str, decrypt_data, hash_password, compare_passwords
 from logging import Logger, LogEntry
@@ -146,7 +146,7 @@ class Database:
         """
         return self.errors
 
-    def login_user(self, username: str, password: str) -> User:
+    def login_user(self, username: str, password: str) -> User | None:
         """
         :param username:
         :param password:
@@ -188,6 +188,23 @@ class Database:
         :return: Returns a list of all users in the database
         """
         return _get_all_users()
+
+    @authorize(UserType.CONSULTANT)
+    def get_all_members(self) -> list[Member]:
+        """
+        :return: Returns a list of all members in the database
+        """
+        _db_cursor.execute("SELECT * FROM members")
+        members = _db_cursor.fetchall()
+
+        return_list = []
+        # we cant search for the encrypted data in the db, since the encryption is kinda
+        # random since the encryption adds random padding to the input data
+        for mem in members:
+            decrypted_mem = tuple(decrypt_data(user_data) for user_data in mem)
+            return_list.append(Member(*decrypted_mem))
+
+        return return_list
 
     @authorize(UserType.CONSULTANT)
     def create_member(self, first_name: str, last_name: str, age: str, gender: str, weight: str,
@@ -312,7 +329,7 @@ class Database:
         _db_connection.commit()
         _logger.log(_current_user.username, "Created user", f"username: {username}", False)
 
-    def edit_password(self, old_password: str, new_password: str) -> None:
+    def edit_my_password(self, old_password: str, new_password: str) -> None:
         if not _current_user:
             self.errors.append("You must be logged in to change your password.")
             _logger.log("...", "Failed to change password", "User is not logged in", True)

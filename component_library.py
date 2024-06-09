@@ -101,9 +101,8 @@ def column_based_single_select(title: str, options: list[str], column_count: int
     :param options:  a list of strings that the user can choose from
     :param column_count:  the amount of columns that the options should be displayed in
     :param persist_toast:  if the toast you created before this single select should persist at refresh
-    :return:  the index of the item in the list that the user selected or if the user selected back, it returns -1
+    :return:  the index of the item in the list that the user selected
     """
-
     persisted_toasts: list[tuple[str, str]] = _toast.copy() if persist_toast else []
     width_per_column = ASSUMED_PAGE_WIDTH // column_count
     amount_of_rows = math.ceil(len(options) / column_count)
@@ -147,21 +146,21 @@ def column_based_single_select(title: str, options: list[str], column_count: int
         set_all_toasts(toast)
 
 
-def paginated_single_select(title: str, options: list[str], allow_back: bool = True,
+def paginated_single_select(title: str, options: list[str], persisted_options: dict[str, str] = None,
                             item_interactable: bool = True, persist_toast: bool = False) -> int:
     """
     this method will display a menu to the user with a list of options that the user can choose from.
     it will automatically handle pages if those are needed.
+
     :param item_interactable: if the user is allowed to select an item from the list
-     (if True, will force to allow_back=True)
     :param title:  the title of the menu
     :param options:  a list of strings that the user can choose from
-    :param allow_back:  if the user should be able to go back
+    :param persisted_options: additional options that will always stay no matter the page.
+    The key is the key you have to press in order to select it
     :param persist_toast:  if the toast you created before this single select should persist at refresh
-    :return:  the index of the item in the list that the user selected or if the user selected back, it returns -1
+    :return:  the index of the item that was selected. or negative if it is one of the persisted options
+    (e.g. -1 for first persisted option, -2 for second persisted option)
     """
-    if not item_interactable:
-        allow_back = True  # if the items are not selectable, then the user should be able to go back
 
     persisted_toasts: list[tuple[str, str]] = _toast.copy() if persist_toast else []
 
@@ -193,7 +192,9 @@ def paginated_single_select(title: str, options: list[str], allow_back: bool = T
             else:
                 print(opt)
 
-        print("")
+        if total_pages > 1 or persisted_options:
+            print("")
+
         if total_pages > 1:
             print(f"page {page + 1}/{total_pages}")
             if page > 0:
@@ -206,15 +207,18 @@ def paginated_single_select(title: str, options: list[str], allow_back: bool = T
                 print("[N] Next Page")
             else:
                 print_colored("[N] Next Page", 'gray', True)
-        if allow_back:
-            print("[B] Back")
+        for key, value in persisted_options.items():
+            print(f"[{key}] {value}")
 
         choice = input("\nMake a choice by entering its corresponding character: ").lower()
         set_select_toast("")
-        if allow_back and (choice == 'b' or choice == 'back'):
-            set_toast("")
-            return -1
-        elif choice.isdigit():
+
+        for index, key in enumerate(persisted_options.keys()):
+            if key.lower() == choice:
+                set_toast("")
+                return -1 - index
+
+        if choice.isdigit():
             choice_index = int(choice)
             real_index = choice_index - 1 + start_index
             # we check if the choice index is on this page
