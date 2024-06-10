@@ -42,6 +42,7 @@ try:
                'john.doe@gmail.com', '12345678')
     add_member('Jane', 'doe', '20', 'Female', '60', 'Other street', '2', '1234AB', 'Rotterdam',
                'doe.jane@outlook.com', '87654321')
+
     add_member('Alice', 'Smith', '30', r_gender(), '65', 'Elm street', '5', '5678CD', r_city(),
                'alice234smith@example.com', '12341111')
     add_member('Bob', 'Johnson', '40', r_gender(), '85', 'Pine Lane', '10', '2345EF', r_city(),
@@ -69,8 +70,8 @@ try:
                'liam.taylor@example.com', '12342222')
 
     db.create_consultant('consultant', 'Consultant_123?', 'Consultant', 'User')
-    db.create_consultant('consult_2', 'Consultant_321?', 'Consultant', 'User')
     db.create_admin('sir_admin1', 'AdminAdmin_123?', 'Admin', 'User')
+    db.create_consultant('consult_2', 'Consultant_321?', 'Consultant', 'User')
     db.create_admin('sir_admin2', 'AdminAdmin_321?', 'Admin', 'User')
 
     print("errors:")

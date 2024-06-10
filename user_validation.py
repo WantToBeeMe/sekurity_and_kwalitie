@@ -95,6 +95,8 @@ def is_valid_phone_number(input: str) -> bool:
 
 def is_valid_house_number(input: str) -> bool:
     is_valid_length = 0 < len(input) < 5
+    if not is_valid_length:
+        return False
     is_valid = [i.isdigit() for i in input[0:-1]]
     is_valid_last = input[-1].isalnum()
 

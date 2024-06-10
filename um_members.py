@@ -18,10 +18,8 @@ def main():
             startup_menu()
         elif current_user.type == UserType.CONSULTANT:
             consultant_menu()
-        elif current_user.type == UserType.ADMIN:
+        elif current_user.type == UserType.ADMIN or current_user.type == UserType.SUPER_ADMIN:
             admin_menu()
-        elif current_user.type == UserType.SUPER_ADMIN:
-            super_admin_menu()
         else:
             logout("Invalid user type!", "red")
 
@@ -50,7 +48,7 @@ def startup_menu():
 def consultant_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
-    options = [f"{red}Logout{reset}", "Edit my password", "View member"]
+    options = [f"{red}Logout{reset}", "Reset my password", "View member"]
     option_index = column_based_single_select("Main Menu", options)
 
     if option_index == 0:  # logout
@@ -67,9 +65,8 @@ def admin_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
     log_star = f"{COLOR_CODES['red' if log_risk_detected() else 'green']}*{reset}" if COLOR_ENABLED else ''
-    options = [f"{red}Logout{reset}", "Edit my password", "View member",
-               "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
-               "Reset a consultant's password", "Make a backup", "Restore a backup", f"View logs {log_star}"]
+    options = [f"{red}Logout{reset}", "Reset my password", "View member", "View users",
+               "Make a backup", "Restore a backup", f"View logs {log_star}"]
     # editing and deleting can maybe be combined
     option_index = column_based_single_select("Main Menu", options)
 
@@ -77,69 +74,16 @@ def admin_menu():
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit password
         edit_my_password()
-    elif option_index == 2:  # add / update / delete / search members
+    elif option_index == 2:  # add / update / delete / search -> members
         members_index_page()
-    elif option_index == 3:  # view all users
-        view_all_users()
-    elif option_index == 4:  # register new consultant
-        register_new_user(UserType.CONSULTANT)
-    elif option_index == 5:  # edit a consultant
-        set_toast("not implemented [edit a consultant]", "blue")
-    elif option_index == 6:  # delete a consultant
-        set_toast("not implemented [delete a consultant]", "blue")
-    elif option_index == 7:  # reset a consultant's password
-        set_toast("not implemented [reset a consultant's password]", "blue")
-    elif option_index == 8:  # make a backup
+    elif option_index == 3:  # view / add / update / delete / reset-password -> users (consultants and admins)
+        # this method itself will make sure admins and super_admins get there designated options
+        users_index_page()
+    elif option_index == 4:  # make a backup
         set_toast("not implemented [make a backup]", "blue")
-    elif option_index == 9:  # restore a backup
+    elif option_index == 5:  # restore a backup
         set_toast("not implemented [restore a backup]", "blue")
-    elif option_index == 10:  # view logs
-        view_logs()
-    else:
-        set_toast("Invalid option!", "red")
-
-
-def super_admin_menu() -> None:
-    red = COLOR_CODES['red'] if COLOR_ENABLED else ''
-    reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
-    log_star = f"{COLOR_CODES['red' if log_risk_detected() else 'green']}*{reset}" if COLOR_ENABLED else ''
-    options = [f"{red}Logout{reset}", "Edit my password", "View member",
-               "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
-               "Reset a consultant's password", "Register new admin", "Edit an admin", "Delete an admin",
-               "Reset an admins password",
-               "Make a backup", "Restore a backup", f"View logs {log_star}"]
-    # editing and deleting can maybe be combined
-    option_index = column_based_single_select("Main Menu", options)
-
-    if option_index == 0:  # logout
-        logout("Goodbye!", "yellow")
-    elif option_index == 1:  # edit my password
-        edit_my_password()
-    elif option_index == 2:  # add / update / delete / search members
-        members_index_page()
-    elif option_index == 3:  # view all users
-        view_all_users()
-    elif option_index == 4:  # register new consultant
-        register_new_user(UserType.CONSULTANT)
-    elif option_index == 5:  # edit a consultant
-        set_toast("not implemented [edit a consultant]", "blue")
-    elif option_index == 6:  # delete a consultant
-        set_toast("not implemented [delete a consultant]", "blue")
-    elif option_index == 7:  # reset a consultant's password
-        set_toast("not implemented [reset a consultant's password]", "blue")
-    elif option_index == 8:  # register new admin
-        register_new_user(UserType.ADMIN)
-    elif option_index == 9:  # edit an admin
-        set_toast("not implemented [edit an admin]", "blue")
-    elif option_index == 10:  # delete an admin
-        set_toast("not implemented [delete an admin]", "blue")
-    elif option_index == 11:  # reset an admins password
-        set_toast("not implemented [reset an admins password]", "blue")
-    elif option_index == 12:  # make a backup
-        set_toast("not implemented [make a backup]", "blue")
-    elif option_index == 13:  # restore a backup
-        set_toast("not implemented [restore a backup]", "blue")
-    elif option_index == 14:  # view logs
+    elif option_index == 6:  # view logs
         view_logs()
     else:
         set_toast("Invalid option!", "red")
@@ -153,7 +97,7 @@ def members_index_page():
     end = COLOR_CODES['end'] if COLOR_ENABLED else ''
     green = COLOR_CODES['green'] if COLOR_ENABLED else ''
     yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
-    tried_adding_user = False  # this flag only ensures that if adding a user failed. that it will not overwrite
+    tried_adding_member = False  # this flag only ensures that if adding a member failed. that it will not overwrite
     # the toast with "no results found" but instead will display the error message from the failed creation
 
     db = Database()
@@ -183,7 +127,7 @@ def members_index_page():
             real_name = f"{mem.first_name} {mem.last_name}"
             options.append(f"{str(mem.id):<11.11} {real_name:<30.30} {str(mem.age):<4.4} {mem.email:<30.30}")
 
-        if not options and not tried_adding_user:
+        if not options and not tried_adding_member:
             set_toast("No results found!", "red")
         clear_terminal()
         page_result = paginated_single_select(header, options, persist_toast=True, persisted_options={
@@ -192,12 +136,12 @@ def members_index_page():
             "A": f"{green}Add new member{end}"
         })
 
-        tried_adding_user = False
+        tried_adding_member = False
         search_term = ''
         if page_result == -1:
             return
         elif page_result >= 0:
-            made_changes = _view_member(filtered_members[page_result])
+            made_changes = _member_details(filtered_members[page_result])
             # the page does not return here. So we make use of the stack
             # to go back in to this loop after the _view_member function returns
             if made_changes:
@@ -209,20 +153,21 @@ def members_index_page():
             if search_term:
                 set_toast(f"Searching for '{search_term}'", "yellow")
         elif page_result == -3:
-            tried_adding_user = True
+            tried_adding_member = True
             success = _add_member()
             if success:
                 # this boolean is nothing more than a bit of optimization. so it won't do a query if noting changed
                 members = db.get_all_members()
 
 
-def _view_member(member: Member) -> bool:
+def _member_details(member: Member) -> bool:
     """
     :return: returns True if the member has been updated or deleted. otherwise return false
     """
     end = COLOR_CODES['end'] if COLOR_ENABLED else ''
     yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
+    set_toast("")
     clear_terminal()
     print(f"ID: {member.id}")
     print(f"Name: {member.first_name} {member.last_name}")
@@ -239,9 +184,9 @@ def _view_member(member: Member) -> bool:
     # meaning that even if someone would get through our cool interface,
     # they would still not be able to delete a member if not authorized
 
-    print(f"\n[E] {yellow}edit member{end}")
+    print(f"\n[E] {yellow}Edit member{end}")
     if allowed_to_delete:
-        print(f"[D] {red}delete member{end}")
+        print(f"[D] {red}Delete member{end}")
 
     chose = input("\nChose an option or press any key to go back: ")
     if chose.lower() == "e" or chose.lower() == "edit":
@@ -423,23 +368,6 @@ def edit_my_password() -> None:
         set_toast("Password changed successfully!", "green")
 
 
-def view_all_users() -> None:
-    clear_terminal()
-    db = Database()
-    users = db.get_all_users()
-    if users is None:
-        set_multiple_toasts(db.get_errors(), "red")
-        return
-
-    header = f"{'Username':<12.12} {'Full Name':<30.30} {'Role':<11.11}"
-    header += "\n" + ('-' * len(header))
-    options = []
-    for user in users:
-        real_name = f"{user.first_name} {user.last_name}"
-        options.append(f"{user.username:<12.12} {real_name:<30.30} {user.get_role_name()}")
-    paginated_single_select(header, options, item_interactable=False, persisted_options={'B': "Back"})
-
-
 def view_logs() -> None:
     logs = get_logs()
 
@@ -471,11 +399,127 @@ def view_logs() -> None:
 
 
 # =================== #
-# ACCOUNT MANAGEMENT  #
+#     USER STUFF      #
 # =================== #
 
+def users_index_page() -> None:
+    green = COLOR_CODES['green'] if COLOR_ENABLED else ''
+    end = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    db = Database()
+    users = db.get_all_users()
+    if users is None:
+        set_multiple_toasts(db.get_errors(), "red")
+        return
 
-def register_new_user(role: UserType) -> None:
+    # note that this is ofcourse not the security check. this is only our frontend not providing the option
+    # however, even if a user would get around that and send the backend an add admin request,
+    # it would still fail since there it will be authenticated
+    persisted_options = {'B': "Back"}
+    if get_current_user().type == UserType.SUPER_ADMIN:
+        persisted_options["C"] = f"{green}Add new consultant{end}"
+        persisted_options["A"] = f"{green}Add new admin{end}"
+    elif get_current_user().type == UserType.ADMIN:
+        persisted_options["C"] = f"{green}Add new consultant{end}"
+
+    header = f"    {'Username':<12.12} {'Full Name':<30.30} {'Role':<11.11}"
+    header += "\n" + ('-' * len(header))
+    while True:
+        options = []
+        for user in users:
+            real_name = f"{user.first_name} {user.last_name}"
+            options.append(f"{user.username:<12.12} {real_name:<30.30} {user.get_role_name()}")
+
+        clear_terminal()
+        page_result = paginated_single_select(header, options, persist_toast=True, persisted_options=persisted_options)
+        if page_result == -1:
+            return
+        elif page_result >= 0:
+            made_changes = _user_details(users[page_result])
+            # the page does not return here. So we make use of the stack
+            # to go back in to this loop after the _view_member function returns
+            if made_changes:
+                # this boolean is nothing more than some optimization. so it won't do a query if noting changed
+                users = db.get_all_users()
+        elif (page_result == -2 and
+              get_current_user().type == UserType.ADMIN or get_current_user().type == UserType.SUPER_ADMIN):
+
+            success = _register_new_user(UserType.CONSULTANT)
+            if success:
+                # this boolean is nothing more than a bit of optimization. so it won't do a query if noting changed
+                users = db.get_all_users()
+
+        elif page_result == -3 and get_current_user().type == UserType.SUPER_ADMIN:
+            success = _register_new_user(UserType.ADMIN)
+            if success:
+                # this boolean is nothing more than a bit of optimization. so it won't do a query if noting changed
+                users = db.get_all_users()
+
+
+def _user_details(user: User) -> bool:
+    """
+    :return:  returns True if the user has been updated or deleted. otherwise it will return false
+    """
+    end = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
+    red = COLOR_CODES['red'] if COLOR_ENABLED else ''
+    set_toast("")
+    clear_terminal()
+    print(f"ID: {user.id}")
+    print(f"Username: {user.username}")
+    print(f"Name: {user.first_name} {user.last_name}")
+    print(f"Role: {user.get_role_name()}")
+    print(f"Registration date: {user.registration_date}")
+
+    current_user = get_current_user()
+    # editable if:
+    # - Selected user can not be superAdmin
+    # - Current user is superAdmin || (Selected user is consultant and Current user is admin)
+    allowed_to_edit = user.type != UserType.SUPER_ADMIN and (
+            current_user.type == UserType.SUPER_ADMIN or
+            (user.type == UserType.CONSULTANT and current_user.type == UserType.ADMIN)
+        )
+
+    if allowed_to_edit:
+        print(f"\n[E] {yellow}Edit user{end}")
+        print(f"[D] {red}Delete user{end}")
+        print(f"[R] {yellow}Reset password{end}")
+
+    chose = input("\nChose an option or press any key to go back: ")
+    if allowed_to_edit and (chose.lower() == "e" or chose.lower() == "edit"):
+        return _edit_user(user)
+    if allowed_to_edit and (chose.lower() == "d" or chose.lower() == "delete"):
+        return _delete_user(user)
+    if allowed_to_edit and (chose.lower() == "r" or chose.lower() == "reset"):
+        return _reset_users_password(user)
+    return False
+
+
+def _edit_user(user: User) -> bool:
+    set_toast("not implemented [edit user]", "blue")
+    clear_terminal()
+    time.sleep(1)
+    set_toast("")
+    return False
+
+
+def _delete_user(user: User) -> bool:
+    set_toast("not implemented [delete user]", "blue")
+    clear_terminal()
+    time.sleep(1)
+    set_toast("")
+    return False
+
+
+def _reset_users_password(user: User) -> bool:
+    set_toast("not implemented [reset user password]", "blue")
+    clear_terminal()
+    time.sleep(1)
+    set_toast("")
+    return False
+
+
+def _register_new_user(role: UserType) -> bool:
+    set_toast("")
     clear_terminal()
     first_name = input("First name: ")
     last_name = input("Last name: ")
@@ -488,11 +532,13 @@ def register_new_user(role: UserType) -> None:
     elif role == UserType.CONSULTANT:
         db.create_consultant(username, password, first_name, last_name)
     else:
-        return
+        return False
     if any(db.get_errors()):
         set_multiple_toasts(db.get_errors(), "red")
+        return False
     else:
         set_toast(f"Consultant registered successfully! ({username})", "green")
+        return True
 
 
 if __name__ == "__main__":
