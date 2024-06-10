@@ -50,17 +50,15 @@ def startup_menu():
 def consultant_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
-    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "View member"]
+    options = [f"{red}Logout{reset}", "Edit my password", "View member"]
     option_index = column_based_single_select("Main Menu", options)
 
     if option_index == 0:  # logout
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit password
         edit_my_password()
-    elif option_index == 2:  # add new member
-        add_new_member()
-    elif option_index == 3:  # view member
-        view_all_members()
+    elif option_index == 2:  # add / update / search members
+        members_index_page()
     else:
         set_toast("Invalid option!", "red")
 
@@ -69,8 +67,7 @@ def admin_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
     log_star = f"{COLOR_CODES['red' if log_risk_detected() else 'green']}*{reset}" if COLOR_ENABLED else ''
-    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "Edit a member", "Delete a member",
-               "Search for a member",  # note that the consultant can NOT delete a member
+    options = [f"{red}Logout{reset}", "Edit my password", "View member",
                "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
                "Reset a consultant's password", "Make a backup", "Restore a backup", f"View logs {log_star}"]
     # editing and deleting can maybe be combined
@@ -80,31 +77,23 @@ def admin_menu():
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit password
         edit_my_password()
-    elif option_index == 2:  # add new member
-        add_new_member()
-    elif option_index == 3:  # update a member
-        # TODO: might never be implemented since it can all be included in the view_all_users method
-        set_toast("not implemented [update a member]", "blue")
-    elif option_index == 4:  # delete a member
-        # TODO: might never be implemented since it can all be included in the view_all_users method
-        set_toast("not implemented [delete a member]", "blue")
-    elif option_index == 5:  # search for a member
-        view_all_members()
-    elif option_index == 6:  # view all users
+    elif option_index == 2:  # add / update / delete / search members
+        members_index_page()
+    elif option_index == 3:  # view all users
         view_all_users()
-    elif option_index == 7:  # register new consultant
+    elif option_index == 4:  # register new consultant
         register_new_user(UserType.CONSULTANT)
-    elif option_index == 8:  # edit a consultant
+    elif option_index == 5:  # edit a consultant
         set_toast("not implemented [edit a consultant]", "blue")
-    elif option_index == 9:  # delete a consultant
+    elif option_index == 6:  # delete a consultant
         set_toast("not implemented [delete a consultant]", "blue")
-    elif option_index == 10:  # reset a consultant's password
+    elif option_index == 7:  # reset a consultant's password
         set_toast("not implemented [reset a consultant's password]", "blue")
-    elif option_index == 11:  # make a backup
+    elif option_index == 8:  # make a backup
         set_toast("not implemented [make a backup]", "blue")
-    elif option_index == 12:  # restore a backup
+    elif option_index == 9:  # restore a backup
         set_toast("not implemented [restore a backup]", "blue")
-    elif option_index == 13:  # view logs
+    elif option_index == 10:  # view logs
         view_logs()
     else:
         set_toast("Invalid option!", "red")
@@ -114,8 +103,7 @@ def super_admin_menu() -> None:
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
     log_star = f"{COLOR_CODES['red' if log_risk_detected() else 'green']}*{reset}" if COLOR_ENABLED else ''
-    options = [f"{red}Logout{reset}", "Edit my password", "Add new member", "Edit a member", "Delete a member",
-               "Search for a member",  # note that the consultant can NOT delete a member
+    options = [f"{red}Logout{reset}", "Edit my password", "View member",
                "View all users", "Register new consultant", "Edit a consultant", "Delete a consultant",
                "Reset a consultant's password", "Register new admin", "Edit an admin", "Delete an admin",
                "Reset an admins password",
@@ -127,39 +115,31 @@ def super_admin_menu() -> None:
         logout("Goodbye!", "yellow")
     elif option_index == 1:  # edit my password
         edit_my_password()
-    elif option_index == 2:  # add new member
-        add_new_member()
-    elif option_index == 3:  # update a member
-        # TODO: might never be implemented since it can all be included in the view_all_users method
-        set_toast("not implemented [update a member]", "blue")
-    elif option_index == 4:  # delete a member
-        # TODO: might never be implemented since it can all be included in the view_all_users method
-        set_toast("not implemented [delete a member]", "blue")
-    elif option_index == 5:  # search for a member
-        view_all_members()
-    elif option_index == 6:  # view all users
+    elif option_index == 2:  # add / update / delete / search members
+        members_index_page()
+    elif option_index == 3:  # view all users
         view_all_users()
-    elif option_index == 7:  # register new consultant
+    elif option_index == 4:  # register new consultant
         register_new_user(UserType.CONSULTANT)
-    elif option_index == 8:  # edit a consultant
+    elif option_index == 5:  # edit a consultant
         set_toast("not implemented [edit a consultant]", "blue")
-    elif option_index == 9:  # delete a consultant
+    elif option_index == 6:  # delete a consultant
         set_toast("not implemented [delete a consultant]", "blue")
-    elif option_index == 10:  # reset a consultant's password
+    elif option_index == 7:  # reset a consultant's password
         set_toast("not implemented [reset a consultant's password]", "blue")
-    elif option_index == 11:  # register new admin
+    elif option_index == 8:  # register new admin
         register_new_user(UserType.ADMIN)
-    elif option_index == 12:  # edit an admin
+    elif option_index == 9:  # edit an admin
         set_toast("not implemented [edit an admin]", "blue")
-    elif option_index == 13:  # delete an admin
+    elif option_index == 10:  # delete an admin
         set_toast("not implemented [delete an admin]", "blue")
-    elif option_index == 14:  # reset an admins password
+    elif option_index == 11:  # reset an admins password
         set_toast("not implemented [reset an admins password]", "blue")
-    elif option_index == 15:  # make a backup
+    elif option_index == 12:  # make a backup
         set_toast("not implemented [make a backup]", "blue")
-    elif option_index == 16:  # restore a backup
+    elif option_index == 13:  # restore a backup
         set_toast("not implemented [restore a backup]", "blue")
-    elif option_index == 17:  # view logs
+    elif option_index == 14:  # view logs
         view_logs()
     else:
         set_toast("Invalid option!", "red")
@@ -169,16 +149,20 @@ def super_admin_menu() -> None:
 #    MEMBER RELATED   #
 # =================== #
 
-def view_all_members():
+def members_index_page():
     end = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    green = COLOR_CODES['green'] if COLOR_ENABLED else ''
     yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
+    tried_adding_user = False  # this flag only ensures that if adding a user failed. that it will not overwrite
+    # the toast with "no results found" but instead will display the error message from the failed creation
+
     db = Database()
     members = db.get_all_members()
     if members is None:
         set_multiple_toasts(db.get_errors(), "red")
         return
 
-    header = f"{'ID':<11.11} {'Full Name':<30.30} {'Age':<4.4} {'Email':<30.30}"
+    header = f"    {'ID':<11.11} {'Full Name':<30.30} {'Age':<4.4} {'Email':<30.30}"
     header += "\n" + ('-' * len(header))
     search_term = ''  # must be able to search on: id, first name, last name, address, email address and phone number
     while True:
@@ -199,26 +183,43 @@ def view_all_members():
             real_name = f"{mem.first_name} {mem.last_name}"
             options.append(f"{str(mem.id):<11.11} {real_name:<30.30} {str(mem.age):<4.4} {mem.email:<30.30}")
 
-        if not options:
+        if not options and not tried_adding_user:
             set_toast("No results found!", "red")
         clear_terminal()
-        page_result = paginated_single_select(header, options, persist_toast=True,
-                                              persisted_options={'B': "Back", "S": f"{yellow}Search{end}"})
+        page_result = paginated_single_select(header, options, persist_toast=True, persisted_options={
+            'B': "Back",
+            "S": f"{yellow}Search{end}",
+            "A": f"{green}Add new member{end}"
+        })
 
+        tried_adding_user = False
+        search_term = ''
         if page_result == -1:
             return
         elif page_result >= 0:
-            _view_member(filtered_members[page_result])
+            made_changes = _view_member(filtered_members[page_result])
             # the page does not return here. So we make use of the stack
             # to go back in to this loop after the _view_member function returns
+            if made_changes:
+                # this boolean is nothing more than a bit of optimization. so it won't do a query if noting changed
+                members = db.get_all_members()
         elif page_result == -2:
             clear_terminal()
             search_term = input("Search term: ")
             if search_term:
                 set_toast(f"Searching for '{search_term}'", "yellow")
+        elif page_result == -3:
+            tried_adding_user = True
+            success = _add_member()
+            if success:
+                # this boolean is nothing more than a bit of optimization. so it won't do a query if noting changed
+                members = db.get_all_members()
 
 
-def _view_member(member: Member):
+def _view_member(member: Member) -> bool:
+    """
+    :return: returns True if the member has been updated or deleted. otherwise return false
+    """
     end = COLOR_CODES['end'] if COLOR_ENABLED else ''
     yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
@@ -244,33 +245,139 @@ def _view_member(member: Member):
 
     chose = input("\nChose an option or press any key to go back: ")
     if chose.lower() == "e" or chose.lower() == "edit":
-        _edit_member(member)
-    elif allowed_to_delete and (chose.lower() == "d" or chose.lower() == "delete"):
-        _delete_member(member)
+        return _edit_member(member)
+    if allowed_to_delete and (chose.lower() == "d" or chose.lower() == "delete"):
+        return _delete_member(member)
+    return False
 
 
-def _edit_member(member: Member):
-    # TODO:
-    #  - way 1: create input field for each attribute, show current value,
-    #  -    and just allow them to press enter to keep it, or type it otherwise
-    #       (execpt select fields, those cant be empty due to the way i implemented it)
-    #       (way one can maybe reuse a bit of the create_member code )
-    #  - way 2: list all the attributes and allow them to select which one to edit
-    set_toast("NOT IMPLEMENTED", "blue")
+def _edit_member(member: Member) -> bool:
+    """
+    :return: returns True if the member has been updated. otherwise it will return false
+    """
+    gray = COLOR_CODES['gray'] if COLOR_ENABLED else ''
+    end = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
+
+    def currently(value: any) -> str:
+        return f"{gray}currently: {str(value)}{end}"
+
+    set_toast("step 1/4", "yellow")
     clear_terminal()
-    time.sleep(1)
-    set_toast("")
+    print(f"Personal information: {yellow}leave empty to keep current value{end}")
+    first_name = input(f"First name {currently(member.first_name)}: ")
+    first_name = first_name if first_name else member.first_name
+    last_name = input(f"Last name {currently(member.last_name)}: ")
+    last_name = last_name if last_name else member.last_name
+    age = input(f"Age {currently(member.age)}: ")
+    age = age if age else str(member.age)
+    weight = input(f"Weight {currently(member.weight)}: ")
+    weight = weight if weight else str(member.weight)
 
-
-def _delete_member(member: Member):
-    # TODO:
-    #  - are you sure you want to delete this member?
-    #  - delete member query in db
-
-    set_toast("NOT IMPLEMENTED", "blue")
+    set_toast(f"step 2/4 {gray}{first_name} {last_name}", "yellow")
     clear_terminal()
-    time.sleep(1)
+    gender = GENDER_LIST[column_based_single_select(f"Gender: {currently(member.gender)}", GENDER_LIST,
+                                                    persist_toast=True)]
+
+    set_toast(f"step 3/4 {gray}{first_name} {last_name} ({gender})", "yellow")
+    clear_terminal()
+    print(f"Contact information:  {yellow}leave empty to keep current value{end}")
+
+    email = input(f"Email {currently(member.email)}: ")
+    email = email if email else member.email
+    phone_number = input(f"Phone: +31-6- (only last 8 digits) {currently(member.phone)}:")
+    phone_number = phone_number if phone_number else member.phone
+    street = input(f"Street {currently(member.street_name)}: ")
+    street = street if street else member.street_name
+    house_number = input(f"House number {currently(member.house_number)}: ")
+    house_number = house_number if house_number else member.house_number
+    zip_code = input(f"Zip code {currently(member.zip_code)}: ")
+    zip_code = zip_code if zip_code else member.zip_code
+
+    set_toast(f"step 4/4 {gray}{first_name} {last_name} ({gender}) {email}/{phone_number}", "yellow")
+    clear_terminal()
+    city_name = CITY_LIST[column_based_single_select(f"City:  {currently(member.city)}", CITY_LIST, persist_toast=True)]
+
+    db = Database()
+    db.update_member(member.id, first_name, last_name, age, gender, weight, street,
+                     house_number, zip_code, city_name, email, phone_number)
+
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+        return False
+    else:
+        set_toast(f"Member updated successfully! ({first_name} {last_name})", "green")
+        return True
+
+
+def _delete_member(member: Member) -> bool:
+    """
+    :return:  returns True if you successfully deleted a member. otherwise it will return false
+    """
     set_toast("")
+    while True:
+        clear_terminal()
+        print(f"Are you sure you want to delete {member.first_name} {member.last_name}?")
+        print("[Y] Yes")
+        print("[N] No")
+        chose = input("Chose an option: ")
+        if chose.lower() == "y" or chose.lower() == "yes":
+            db = Database()
+            db.delete_member(member.id)
+            if any(db.get_errors()):
+                set_multiple_toasts(db.get_errors(), "red")
+            else:
+                set_toast(f"{member.first_name} {member.last_name} deleted successfully!", "green")
+                return True
+        elif chose.lower() == "n" or chose.lower() == "no":
+            set_toast("")
+            return False
+        set_toast("please enter 'y' or 'n'", "red")
+
+
+def _add_member() -> bool:
+    """
+    :return: returns True if the member has been created. otherwise it will return false
+    """
+    gray = COLOR_CODES['gray'] if COLOR_ENABLED else ''
+
+    set_toast("step 1/4", "yellow")
+    clear_terminal()
+    print("Personal information:")
+    first_name = input("First name: ")
+    last_name = input("Last name: ")
+    age = input("Age: ")
+    weight = input("Weight: ")
+
+    set_toast(f"step 2/4 {gray}{first_name} {last_name}", "yellow")
+    clear_terminal()
+    gender = GENDER_LIST[column_based_single_select("Gender:", GENDER_LIST, persist_toast=True)]
+
+    set_toast(f"step 3/4 {gray}{first_name} {last_name} ({gender})", "yellow")
+    clear_terminal()
+    print("Contact information: ")
+
+    email = input("Email: ")
+    phone_number = input("Phone: +31-6- (only last 8 digits):")
+    street = input("Street: ")
+    house_number = input("House number: ")
+    zip_code = input("Zip code: ")
+
+    set_toast(f"step 4/4 {gray}{first_name} {last_name} ({gender}) {email}/{phone_number}", "yellow")
+    clear_terminal()
+    city_name = CITY_LIST[column_based_single_select("City:", CITY_LIST, persist_toast=True)]
+
+    db = Database()
+    db.create_member(first_name, last_name, age, gender, weight, street,
+                     house_number, zip_code, city_name, email, phone_number)
+
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+        return False
+    else:
+        set_toast(f"Member created successfully! ({first_name} {last_name})", "green")
+        return True
+
 
 # =================== #
 #   THE OTHER STUFF   #
@@ -386,45 +493,6 @@ def register_new_user(role: UserType) -> None:
         set_multiple_toasts(db.get_errors(), "red")
     else:
         set_toast(f"Consultant registered successfully! ({username})", "green")
-
-
-def add_new_member() -> None:
-    gray = COLOR_CODES['gray'] if COLOR_ENABLED else ''
-
-    set_toast("step 1/4", "yellow")
-    clear_terminal()
-    print("Personal information:")
-    first_name = input("First name: ")
-    last_name = input("Last name: ")
-    age = input("Age: ")
-    weight = input("Weight: ")
-
-    set_toast(f"step 2/4 {gray}{first_name} {last_name}", "yellow")
-    clear_terminal()
-    gender = GENDER_LIST[column_based_single_select("Gender:", GENDER_LIST, persist_toast=True)]
-
-    set_toast(f"step 3/4 {gray}{first_name} {last_name} ({gender})", "yellow")
-    clear_terminal()
-    print("Contact information: ")
-
-    email = input("Email: ")
-    phone_number = input("Phone: +31-6- (only last 8 digits):")
-    street = input("Street: ")
-    house_number = input("House number: ")
-    zip_code = input("Zip code: ")
-
-    set_toast(f"step 4/4 {gray}{first_name} {last_name} ({gender}) {email}/{phone_number}", "yellow")
-    clear_terminal()
-    city_name = CITY_LIST[column_based_single_select("City:", CITY_LIST, persist_toast=True)]
-
-    db = Database()
-    db.create_member(first_name, last_name, age, gender, weight, street,
-                     house_number, zip_code, city_name, email, phone_number)
-
-    if any(db.get_errors()):
-        set_multiple_toasts(db.get_errors(), "red")
-    else:
-        set_toast(f"Member created successfully! ({first_name} {last_name})", "green")
 
 
 if __name__ == "__main__":

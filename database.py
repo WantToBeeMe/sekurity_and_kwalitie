@@ -41,7 +41,7 @@ def setup_database() -> None:
                 first_name TEXT, last_name TEXT, registration_date TEXT)''')
 
     _db_cursor.execute('''CREATE TABLE IF NOT EXISTS members
-                    (id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age TEXT,
+                    (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, age TEXT,
                     gender TEXT, weight REAL, street TEXT, house_number TEXT, zip TEXT,
                     city TEXT, email TEXT, phone TEXT)''')
 
@@ -75,8 +75,9 @@ def close_database() -> None:
 
 def logout_user() -> None:
     global _current_user
-    _logger.log(_current_user.username, "Logged out", "", False)
-    _current_user = None
+    if _current_user:
+        _logger.log(_current_user.username, "Logged out", "", False)
+        _current_user = None
 
 
 def is_authorized(user_type: UserType) -> bool:
@@ -99,6 +100,8 @@ def authorize(user_type: UserType):
         def wrapper(self, *args, **kwargs):
             if not is_authorized(user_type):
                 self.errors.append("You are not authorized to perform this action.")
+                username = _current_user.username if _current_user else "..."
+                _logger.log(username, "Unauthorized action", "", True)
                 return None
             return func(self, *args, **kwargs)
 
@@ -136,6 +139,14 @@ class Database:
     These errors can be retrieved using the `get_errors` method.  Make sure to recreate this object for
     each database action to ensure that the errors are only from the current action.
     """
+
+    # =================== #
+    #    GENERIC LOGIC    #
+    # =================== #
+
+    def logout_user(_self):
+        logout_user()  # alias for the global function (just to make it consistent, since login_user
+        # requires a Database object, so now logout_user does can also be called with a Database object)
 
     def __init__(self):
         self.errors: list[str] = []
@@ -182,15 +193,12 @@ class Database:
         _logger.login_attempts += 1
         return None
 
-    @authorize(UserType.ADMIN)
-    def get_all_users(self) -> list[User]:
-        """
-        :return: Returns a list of all users in the database
-        """
-        return _get_all_users()
+    # =================== #
+    #     MEMBER LOGIC    #
+    # =================== #
 
     @authorize(UserType.CONSULTANT)
-    def get_all_members(self) -> list[Member]:
+    def get_all_members(self) -> list[Member] | None:
         """
         :return: Returns a list of all members in the database
         """
@@ -201,15 +209,22 @@ class Database:
         # we cant search for the encrypted data in the db, since the encryption is kinda
         # random since the encryption adds random padding to the input data
         for mem in members:
-            decrypted_mem = tuple(decrypt_data(user_data) for user_data in mem)
-            return_list.append(Member(*decrypted_mem))
+            decrypted_mem = tuple(decrypt_data(user_data) for user_data in mem[1:])
+            return_list.append(Member(mem[0], *decrypted_mem))
 
         return return_list
 
-    @authorize(UserType.CONSULTANT)
-    def create_member(self, first_name: str, last_name: str, age: str, gender: str, weight: str,
-                      street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> None:
-        member_id = generate_user_id()
+    @authorize(UserType.ADMIN)
+    def delete_member(self, members_id: int) -> None:
+        _db_cursor.execute("DELETE FROM members WHERE id = ?", (members_id,))
+        _db_connection.commit()
+        _logger.log(_current_user.username, "Deleted member", f"Member ID: {members_id}", False)
+
+    def _validate_member_data(self, first_name: str, last_name: str, age: str, gender: str, weight: str,
+                              street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> bool:
+        """
+        :return: Ture if everything is valid, otherwise it will return False
+        """
         first_name_valid = is_valid_name(first_name)
         last_name_valid = is_valid_name(last_name)
         age_valid = is_valid_age(age)
@@ -221,43 +236,51 @@ class Database:
         zip_code_valid = is_valid_zip_code(zip_code)
         email_valid = is_valid_email(email)
         city_valid = is_valid_city(city)
+        if all([first_name_valid, last_name_valid, age_valid, gender_valid, weight_valid, phone_valid,
+                house_number_valid, street_valid, zip_code_valid, email_valid, city_valid]):
+            return True
+        if not first_name_valid:
+            self.errors.append("First name must be between 2 and 30 characters long "
+                               "and can only contain letters and spaces.")
+        if not last_name_valid:
+            self.errors.append("Last name must be between 2 and 30 "
+                               "characters long and can only contain letters and spaces.")
+        if not age_valid:
+            self.errors.append("Age must be between 0 and 120.")
+        if not gender_valid:
+            self.errors.append("Gender must be 'M', 'F', or 'O'.")
+        if not weight_valid:
+            self.errors.append("Weight must be a positive number.")
+        if not phone_valid:
+            self.errors.append("Phone number must be a valid 10-digit number.")
+        if not house_number_valid:
+            self.errors.append("House number must be a positive integer.")
+        if not street_valid:
+            self.errors.append("Street must be between 2 and 50 characters long and can only contain letters,"
+                               " numbers, spaces, and hyphens.")
+        if not zip_code_valid:
+            self.errors.append("Zip code must be a valid postal code format.")
+        if not email_valid:
+            self.errors.append("Email must be a valid email address.")
+        if not city_valid:
+            self.errors.append("City must be a valid city name from the predefined list.")
+        _logger.log(_current_user.username, "Failed to create member", "Invalid input data", False)
+        return False
 
-        if not all([first_name_valid, last_name_valid, age_valid, gender_valid, weight_valid, phone_valid,
-                    house_number_valid, street_valid, zip_code_valid, email_valid, city_valid]):
-            if not first_name_valid:
-                self.errors.append("First name must be between 2 and 30 characters long "
-                                   "and can only contain letters and spaces.")
-            if not last_name_valid:
-                self.errors.append("Last name must be between 2 and 30 "
-                                   "characters long and can only contain letters and spaces.")
-            if not age_valid:
-                self.errors.append("Age must be between 0 and 120.")
-            if not gender_valid:
-                self.errors.append("Gender must be 'M', 'F', or 'O'.")
-            if not weight_valid:
-                self.errors.append("Weight must be a positive number.")
-            if not phone_valid:
-                self.errors.append("Phone number must be a valid 10-digit number.")
-            if not house_number_valid:
-                self.errors.append("House number must be a positive integer.")
-            if not street_valid:
-                self.errors.append("Street must be between 2 and 50 characters long and can only contain letters,"
-                                   " numbers, spaces, and hyphens.")
-            if not zip_code_valid:
-                self.errors.append("Zip code must be a valid postal code format.")
-            if not email_valid:
-                self.errors.append("Email must be a valid email address.")
-            if not city_valid:
-                self.errors.append("City must be a valid city name from the predefined list.")
-            _logger.log(_current_user.username, "Failed to create member", "Invalid input data", False)
+    @authorize(UserType.CONSULTANT)
+    def create_member(self, first_name: str, last_name: str, age: str, gender: str, weight: str,
+                      street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> None:
+        member_id = generate_user_id()
+        if not self._validate_member_data(first_name, last_name, age, gender, weight, street,
+                                          house_number, zip_code, city, email, phone):
             return
 
         _db_cursor.execute(
             """
         INSERT INTO members (id, first_name, last_name, age, gender, weight, street, house_number, zip, city, email, phone)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,(
-                encrypt_data_str(member_id),
+        """, (
+                member_id,
                 encrypt_data_str(first_name),
                 encrypt_data_str(last_name),
                 encrypt_data_str(age),
@@ -274,6 +297,49 @@ class Database:
 
         _db_connection.commit()
         _logger.log(_current_user.username, "Created member", f"Member ID: {member_id}", False)
+
+    @authorize(UserType.CONSULTANT)
+    def update_member(self, member_id: int, first_name: str, last_name: str, age: str, gender: str, weight: str,
+                      street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> None:
+        if not self._validate_member_data(first_name, last_name, age, gender, weight, street,
+                                          house_number, zip_code, city, email, phone):
+            return
+
+        _db_cursor.execute(
+            """
+            UPDATE members SET
+                first_name = ?,     last_name = ?,
+                age = ?,            gender = ?,
+                weight = ?,         street = ?,
+                house_number = ?,   zip = ?,
+                city = ?,           email = ?,
+                phone = ?
+            WHERE  id = ?
+            """, (
+                encrypt_data_str(first_name),
+                encrypt_data_str(last_name),
+                encrypt_data_str(age),
+                encrypt_data_str(gender),
+                encrypt_data_str(weight),
+                encrypt_data_str(street),
+                encrypt_data_str(house_number),
+                encrypt_data_str(zip_code),
+                encrypt_data_str(city),
+                encrypt_data_str(email),
+                encrypt_data_str(phone),
+                member_id)
+        )
+
+    # =================== #
+    #      USER LOGIC     #
+    # =================== #
+
+    @authorize(UserType.ADMIN)
+    def get_all_users(self) -> list[User] | None:
+        """
+        :return: Returns a list of all users in the database
+        """
+        return _get_all_users()
 
     @authorize(UserType.ADMIN)
     def create_consultant(self, username: str, password: str, first_name: str, last_name: str) -> None:
@@ -296,7 +362,7 @@ class Database:
                 self.errors.append(
                     "Last name must be between 2 and 30 characters long and can only contain letters and spaces.")
             if not username_valid:
-                self.errors.append("Username must be between 3 and 20 characters long and can only contain letters,"
+                self.errors.append("Username must be between 8 and 10 characters long and can only contain letters,"
                                    " numbers, and underscores.")
             if not password_valid:
                 self.errors.append("Password must be between 8 and 20 characters long and must contain at least one"
@@ -320,7 +386,7 @@ class Database:
             (
                 encrypt_data_str(username),
                 encrypt_data_str(hash_password(password)),
-                encrypt_data_str(type.value),
+                encrypt_data_str(str(type.value)),
                 encrypt_data_str(first_name),
                 encrypt_data_str(last_name),
                 encrypt_data_str(time.strftime("%Y-%m-%d"))

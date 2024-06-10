@@ -7,10 +7,10 @@ from enum import Enum
 
 
 class Member:
-    def __init__(self, id: str, first_name: str, last_name: str, age: str, gender: str,
+    def __init__(self, id: int, first_name: str, last_name: str, age: str, gender: str,
                  weight: str, street_name: str, house_number: str, zip_code: str,
                  city: str, email: str, phone: str) -> None:
-        self.id: int = int(id)
+        self.id: int = id
         self.first_name: str = first_name
         self.last_name: str = last_name
         self.age: int = int(age)

@@ -32,7 +32,7 @@ def is_valid_username(input: str) -> bool:
     if not valid_length:
         return False  # we return early since the length can be 0, and will cause an error in the next checks
     valid_start_char = input[0].isalpha() or input[0] == "_"
-    valid_chars = all(i.isalnum() or i in allowed_chars for i in input)
+    valid_chars = all((char.isalnum() or char in allowed_chars) for char in input)
 
     if all([valid_length, valid_start_char, valid_chars]):
         return True
@@ -75,15 +75,12 @@ def is_valid_age(input: str) -> bool:
 
 
 def is_valid_weight(input: str) -> bool:
-    is_digit = input.isdigit()
-    valid_amount = False
-    if is_digit:
-        valid_amount = 0 < int(input) < 500
-
-    if all([is_digit, valid_amount]):
-        return True
-
-    # "Weight must be a number between 0 and 500."
+    try:
+        weight = float(input)
+        if 0 < weight < 500:
+            return True
+    except ValueError:
+        return False
     return False
 
 
