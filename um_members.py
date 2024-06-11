@@ -1,10 +1,10 @@
 import time
-from database import (get_current_user, setup_database, close_database, Database, logout_user,
-                      get_logs, log_risk_detected)
+from backend import get_current_user, setup_database, close_database, Database, logout_user
 from component_library import (paginated_single_select, password_input, set_toast, clear_terminal, set_multiple_toasts,
                                COLOR_ENABLED, COLOR_CODES, column_based_single_select)
 from classes import UserType, Member, User
-from user_validation import CITY_LIST, GENDER_LIST
+from validation import CITY_LIST, GENDER_LIST
+from encryption import compare_passwords
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
 def startup_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
-    options = ["Login", f"{red}Exit{reset}", "temporary login"]
+    options = ["Login", f"{red}Exit{reset}"]
 
     option_index = column_based_single_select("Main Menu", options, column_count=1)
 
@@ -40,9 +40,9 @@ def startup_menu():
     elif option_index == 1:
         # we don't have to close db here, it will be done in the final block
         exit(0)
-    elif option_index == 2:  # this and the temporary option should be deleted on turn-in
-        db = Database()
-        db.login_user("super_admin", "Admin_123?")
+    else:
+         set_toast("Invalid option!", "red")
+
 
 
 def consultant_menu():
@@ -64,9 +64,18 @@ def consultant_menu():
 def admin_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
-    log_star = f"{COLOR_CODES['red' if log_risk_detected() else 'green']}*{reset}" if COLOR_ENABLED else ''
+    # always since these dont obee with the laws of the COLOR_ENABLED flag >:)
+    always_green =  COLOR_CODES['green']
+    always_red = COLOR_CODES['red']
+    always_reset =  COLOR_CODES['end']
+
+    db = Database()
+    log_notice =  f"{always_green}No new risks{always_reset}"
+    if db.log_risk_detected():
+        log_notice = f"{always_red}Unread Risk detected!{always_reset}"
+
     options = [f"{red}Logout{reset}", "Reset my password", "View member", "View users",
-               "Make a backup", "Restore a backup", f"View logs {log_star}"]
+               "Make a backup", "Restore a backup", f"View logs: {log_notice}"]
     # editing and deleting can maybe be combined
     option_index = column_based_single_select("Main Menu", options)
 
@@ -80,9 +89,9 @@ def admin_menu():
         # this method itself will make sure admins and super_admins get there designated options
         users_index_page()
     elif option_index == 4:  # make a backup
-        set_toast("not implemented [make a backup]", "blue")
+        create_backup()
     elif option_index == 5:  # restore a backup
-        set_toast("not implemented [restore a backup]", "blue")
+        restore_backup()
     elif option_index == 6:  # view logs
         view_logs()
     else:
@@ -114,11 +123,14 @@ def members_index_page():
         for mem in members:
             matches_search = not search_term
             if search_term:
-                matches_search = (search_term.lower() in mem.first_name.lower() or
-                                  search_term.lower() in mem.last_name.lower() or
-                                  search_term.lower() in mem.street_name.lower() or
+                matches_search = (search_term.lower() in str(mem.id) or
+                                  search_term.lower() in (mem.first_name + " " + mem.last_name).lower() or
+                                  search_term.lower() in (mem.street_name + " " + mem.house_number).lower() or
                                   search_term.lower() in mem.email.lower() or
-                                  search_term in mem.phone)
+                                  search_term.lower() in mem.zip_code.lower() or
+                                  search_term.lower() in mem.phone.lower() or
+                                  search_term.lower() in mem.city.lower())
+
             if matches_search:
                 filtered_members.append(mem)
 
@@ -133,7 +145,7 @@ def members_index_page():
         page_result = paginated_single_select(header, options, persist_toast=True, persisted_options={
             'B': "Back",
             "S": f"{yellow}Search{end}",
-            "A": f"{green}Add new member{end}"
+            "A": f"{green}Add new member{end}",
         })
 
         tried_adding_member = False
@@ -369,20 +381,23 @@ def edit_my_password() -> None:
 
 
 def view_logs() -> None:
-    logs = get_logs()
+    db = Database()
+    logs = db.get_logs()
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+        return
 
-    red = green = white = gray = end = ''
+    red, green, end = (COLOR_CODES['red'], COLOR_CODES['green'], COLOR_CODES['end'] )
+    white = gray = ''
     if COLOR_ENABLED:
-        red, green, white, gray, end = (
-            COLOR_CODES['red'], COLOR_CODES['green'], COLOR_CODES['white'], COLOR_CODES['gray'], COLOR_CODES['end']
-        )
+         white, gray = ( COLOR_CODES['white'], COLOR_CODES['gray'] )
     header = f"{white}ID | yyyy-mm-dd hh:mm:ss | {'Username':<11}  {'Description':<30} suspicious{end}"
     header += "\n" + ('-' * len(header))
 
-    if log_risk_detected():
-        set_toast("Risk detected in logs!", "red")
+    if db.log_risk_detected():
+        set_toast("Unread risk detected in logs!", "red")
     else:  # this flag was not a requirement, however, it is really easy to do and adds to the usability of the system
-        set_toast("No risk detected in logs!", "green")
+        set_toast("No unread risk detected in logs!", "green")
 
     humanized_logs = []
     for log in reversed(logs):  # we want to start from the most recent log
@@ -396,6 +411,36 @@ def view_logs() -> None:
     clear_terminal()
     paginated_single_select(header, humanized_logs, item_interactable=False,
                             persist_toast=True, persisted_options={'B': "Back"})
+
+
+def create_backup() -> None:
+    db = Database()
+    db.create_backup()
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+    else:
+        set_toast("Backup created successfully!", "green")
+
+def restore_backup() -> None:
+    db = Database()
+    backups = db.get_backups()
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+        return
+
+    if not backups:
+        set_toast("No backups found!", "red")
+        return
+
+    index = paginated_single_select("Select a backup to restore", backups, persist_toast=True, persisted_options={'B': "Back"})
+    if index < 0:
+        return
+
+    db.apply_backup(backups[index])
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+    else:
+        set_toast("Backup applied successfully!", "green")
 
 
 # =================== #
@@ -481,46 +526,112 @@ def _user_details(user: User) -> bool:
 
     if allowed_to_edit:
         print(f"\n[E] {yellow}Edit user{end}")
-        print(f"[D] {red}Delete user{end}")
         print(f"[R] {yellow}Reset password{end}")
+        print(f"[D] {red}Delete user{end}")
+
 
     chose = input("\nChose an option or press any key to go back: ")
     if allowed_to_edit and (chose.lower() == "e" or chose.lower() == "edit"):
         return _edit_user(user)
-    if allowed_to_edit and (chose.lower() == "d" or chose.lower() == "delete"):
-        return _delete_user(user)
     if allowed_to_edit and (chose.lower() == "r" or chose.lower() == "reset"):
         return _reset_users_password(user)
+    if allowed_to_edit and (chose.lower() == "d" or chose.lower() == "delete"):
+        return _delete_user(user)
+
     return False
 
 
 def _edit_user(user: User) -> bool:
-    set_toast("not implemented [edit user]", "blue")
+    gray = COLOR_CODES['gray'] if COLOR_ENABLED else ''
+    end = COLOR_CODES['end'] if COLOR_ENABLED else ''
+    yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
+    def currently(value: any) -> str:
+       return f"{gray}currently: {str(value)}{end}"
+
     clear_terminal()
-    time.sleep(1)
-    set_toast("")
-    return False
+    print(f"Updating {user.get_role_name()}: {yellow}leave empty to keep current value{end}")
+    first_name = input(f"First name {currently(user.first_name)}: ")
+    first_name = first_name if first_name else user.first_name
+    last_name = input(f"Last name {currently(user.first_name)}: ")
+    last_name = last_name if last_name else user.last_name
+    username = input(f"Username {currently(user.username)}: ")
+    username = username if username else user.username
+
+    db = Database()
+    if user.type == UserType.CONSULTANT:
+        db.update_consultant( user.id, first_name, last_name, username)
+    if user.type == UserType.ADMIN:
+        db.update_admin( user.id, first_name, last_name, username)
+
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), "red")
+        return False
+    else:
+        set_toast(f"User udated successfully! ({username})", "green")
+        return True
 
 
 def _delete_user(user: User) -> bool:
-    set_toast("not implemented [delete user]", "blue")
-    clear_terminal()
-    time.sleep(1)
-    set_toast("")
-    return False
+    while True:
+        clear_terminal()
+        print(f"Are you sure you want to delete {user.first_name} {user.last_name}?")
+        print("[Y] Yes")
+        print("[N] No")
+        chose = input("Chose an option: ")
+        if chose.lower() == "y" or chose.lower() == "yes":
+            db = Database()
+            if user.type == UserType.CONSULTANT:
+                db.delete_consultant(user.id)
+            elif user.type == UserType.ADMIN:
+                db.delete_admin(user.id)
+
+            if any(db.get_errors()):
+                set_multiple_toasts(db.get_errors(), "red")
+            else:
+                set_toast(f"{user.first_name} {user.last_name} deleted successfully!", "green")
+                return True
+        elif chose.lower() == "n" or chose.lower() == "no":
+            set_toast("")
+            return False
+        set_toast("please enter 'y' or 'n'", "red")
+
 
 
 def _reset_users_password(user: User) -> bool:
-    set_toast("not implemented [reset user password]", "blue")
     clear_terminal()
-    time.sleep(1)
-    set_toast("")
-    return False
+    set_toast('')
+    your_password = password_input('Your password: ')
+    db = Database()
+    current_user = get_current_user()
+
+    if not compare_passwords(your_password, current_user.password_hash):
+        set_toast('Incorrect password!', 'red')
+        return False
+
+    new_password = password_input(f'New password for {user.username}: ')
+    confirm_password = password_input('Confirm new password: ')
+    if new_password != confirm_password:
+        set_toast('Passwords do not match!', 'red')
+        return False
+
+    if user.type == UserType.CONSULTANT:
+        db.reset_consultant_password(user.id, new_password)
+    elif user.type == UserType.ADMIN:
+        db.reset_admin_password(user.id, new_password)
+
+    if any(db.get_errors()):
+        set_multiple_toasts(db.get_errors(), 'red')
+        return False
+    else:
+        set_toast('Password reset successfully!', 'green')
+        return True
 
 
 def _register_new_user(role: UserType) -> bool:
     set_toast("")
     clear_terminal()
+    usertype = "Admin" if role == UserType.ADMIN else "Consultant"
+    print(f"Creating new {usertype}:")
     first_name = input("First name: ")
     last_name = input("Last name: ")
     username = input("Username: ")

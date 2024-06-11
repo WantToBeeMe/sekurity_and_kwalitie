@@ -42,7 +42,6 @@ def is_valid_username(input: str) -> bool:
 
 def is_valid_password(input: str) -> bool:
     allowed_chars = "~!@#$%&_-+=`|\\(){}[]:;'<>,.?/"
-
     valid_length = 12 <= len(input) <= 30
     has_lower = any(char.islower() for char in input)
     has_upper = any(char.isupper() for char in input)

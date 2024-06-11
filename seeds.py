@@ -1,5 +1,5 @@
-from database import (setup_database, close_database, Database)
-from user_validation import CITY_LIST, GENDER_LIST
+from backend import (setup_database, close_database, Database)
+from validation import CITY_LIST, GENDER_LIST
 import random
 
 if __name__ != '__main__':

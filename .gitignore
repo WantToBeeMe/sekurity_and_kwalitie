@@ -11,6 +11,9 @@
 # logs
 logs.bin
 
+# zip files
+*.zip
+
 ## OTHER DEFAULT GENERATED STUFF, TO LAZY TO READ ##
 
 # Byte-compiled / optimized / DLL files

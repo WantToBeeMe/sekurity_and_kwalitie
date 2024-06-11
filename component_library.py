@@ -20,7 +20,7 @@ COLOR_CODES = {
     'cyan': '\033[96m', 'white': '\033[97m',
     'end': '\033[0m'
 }
-
+#
 ASSUMED_PAGE_WIDTH = 90
 # this variable does not force any string to be 80 characters long, so any longer string will still be displayed
 # however, if something has to be calculated based on the width of the page, then this is the assumed width
@@ -256,37 +256,40 @@ def password_input(prompt: str) -> str:
     #     # if you are in PyCharm virtual terminal, we can't use the hide password feature
     #     return input(prompt)
 
-    def read_single_keypress():
-        if os.name == 'nt':
-            import msvcrt
-            return msvcrt.getch().decode('utf-8')
-        else:
-            import tty
-            import termios
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(fd)
-                ch = sys.stdin.read(1)
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            return ch
+    try:
+        def read_single_keypress():
+            if os.name == 'nt':
+                import msvcrt
+                return msvcrt.getch().decode('utf-8')
+            else:
+                import tty
+                import termios
+                fd = sys.stdin.fileno()
+                old_settings = termios.tcgetattr(fd)
+                try:
+                    tty.setraw(fd)
+                    ch = sys.stdin.read(1)
+                finally:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                return ch
 
-    print(prompt, end='', flush=True)
-    password = ""
-    while True:
-        ch = read_single_keypress()
-        if ch in ('\r', '\n'):  # Enter key
-            print()  # Move to the next line
-            break
-        elif ch in ('\b', '\x7f'):  # Backspace key
-            if len(password) > 0:
-                password = password[:-1]
-                # Move cursor back, overwrite with space, move cursor back again
-                sys.stdout.write('\b \b')
+        print(prompt, end='', flush=True)
+        password = ""
+        while True:
+            ch = read_single_keypress()
+            if ch in ('\r', '\n'):  # Enter key
+                print()  # Move to the next line
+                break
+            elif ch in ('\b', '\x7f'):  # Backspace key
+                if len(password) > 0:
+                    password = password[:-1]
+                    # Move cursor back, overwrite with space, move cursor back again
+                    sys.stdout.write('\b \b')
+                    sys.stdout.flush()
+            else:
+                password += ch
+                sys.stdout.write('*')
                 sys.stdout.flush()
-        else:
-            password += ch
-            sys.stdout.write('*')
-            sys.stdout.flush()
-    return password
+        return password
+    except:
+        return ""
