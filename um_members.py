@@ -41,8 +41,7 @@ def startup_menu():
         # we don't have to close db here, it will be done in the final block
         exit(0)
     else:
-         set_toast("Invalid option!", "red")
-
+        set_toast("Invalid option!", "red")
 
 
 def consultant_menu():
@@ -65,12 +64,12 @@ def admin_menu():
     red = COLOR_CODES['red'] if COLOR_ENABLED else ''
     reset = COLOR_CODES['end'] if COLOR_ENABLED else ''
     # always since these dont obee with the laws of the COLOR_ENABLED flag >:)
-    always_green =  COLOR_CODES['green']
+    always_green = COLOR_CODES['green']
     always_red = COLOR_CODES['red']
-    always_reset =  COLOR_CODES['end']
+    always_reset = COLOR_CODES['end']
 
     db = Database()
-    log_notice =  f"{always_green}No new risks{always_reset}"
+    log_notice = f"{always_green}No new risks{always_reset}"
     if db.log_risk_detected():
         log_notice = f"{always_red}Unread Risk detected!{always_reset}"
 
@@ -387,10 +386,10 @@ def view_logs() -> None:
         set_multiple_toasts(db.get_errors(), "red")
         return
 
-    red, green, end = (COLOR_CODES['red'], COLOR_CODES['green'], COLOR_CODES['end'] )
+    red, green, end = (COLOR_CODES['red'], COLOR_CODES['green'], COLOR_CODES['end'])
     white = gray = ''
     if COLOR_ENABLED:
-         white, gray = ( COLOR_CODES['white'], COLOR_CODES['gray'] )
+        white, gray = (COLOR_CODES['white'], COLOR_CODES['gray'])
     header = f"{white}ID | yyyy-mm-dd hh:mm:ss | {'Username':<11}  {'Description':<30} suspicious{end}"
     header += "\n" + ('-' * len(header))
 
@@ -421,6 +420,7 @@ def create_backup() -> None:
     else:
         set_toast("Backup created successfully!", "green")
 
+
 def restore_backup() -> None:
     db = Database()
     backups = db.get_backups()
@@ -432,7 +432,8 @@ def restore_backup() -> None:
         set_toast("No backups found!", "red")
         return
 
-    index = paginated_single_select("Select a backup to restore", backups, persist_toast=True, persisted_options={'B': "Back"})
+    index = paginated_single_select("Select a backup to restore", backups, persist_toast=True,
+                                    persisted_options={'B': "Back"})
     if index < 0:
         return
 
@@ -522,13 +523,12 @@ def _user_details(user: User) -> bool:
     allowed_to_edit = user.type != UserType.SUPER_ADMIN and (
             current_user.type == UserType.SUPER_ADMIN or
             (user.type == UserType.CONSULTANT and current_user.type == UserType.ADMIN)
-        )
+    )
 
     if allowed_to_edit:
         print(f"\n[E] {yellow}Edit user{end}")
         print(f"[R] {yellow}Reset password{end}")
         print(f"[D] {red}Delete user{end}")
-
 
     chose = input("\nChose an option or press any key to go back: ")
     if allowed_to_edit and (chose.lower() == "e" or chose.lower() == "edit"):
@@ -545,8 +545,9 @@ def _edit_user(user: User) -> bool:
     gray = COLOR_CODES['gray'] if COLOR_ENABLED else ''
     end = COLOR_CODES['end'] if COLOR_ENABLED else ''
     yellow = COLOR_CODES['yellow'] if COLOR_ENABLED else ''
+
     def currently(value: any) -> str:
-       return f"{gray}currently: {str(value)}{end}"
+        return f"{gray}currently: {str(value)}{end}"
 
     clear_terminal()
     print(f"Updating {user.get_role_name()}: {yellow}leave empty to keep current value{end}")
@@ -559,9 +560,9 @@ def _edit_user(user: User) -> bool:
 
     db = Database()
     if user.type == UserType.CONSULTANT:
-        db.update_consultant( user.id, first_name, last_name, username)
+        db.update_consultant(user.id, first_name, last_name, username)
     if user.type == UserType.ADMIN:
-        db.update_admin( user.id, first_name, last_name, username)
+        db.update_admin(user.id, first_name, last_name, username)
 
     if any(db.get_errors()):
         set_multiple_toasts(db.get_errors(), "red")
@@ -594,7 +595,6 @@ def _delete_user(user: User) -> bool:
             set_toast("")
             return False
         set_toast("please enter 'y' or 'n'", "red")
-
 
 
 def _reset_users_password(user: User) -> bool:

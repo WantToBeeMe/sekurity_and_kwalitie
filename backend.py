@@ -94,6 +94,7 @@ def authorize(user_type: UserType):
     If the user is not authorized, then an error will be added to the errors list.
     \n Usage: @authorize(UserType.ADMIN)
     """
+
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             if is_authorized(user_type):
@@ -104,6 +105,7 @@ def authorize(user_type: UserType):
             return None
 
         return wrapper
+
     return decorator
 
 
@@ -264,7 +266,6 @@ class Database:
         _logger.log(_current_user.username, "Failed to create member", "Invalid input data", False)
         return False
 
-
     @authorize(UserType.CONSULTANT)
     def create_member(self, first_name: str, last_name: str, age: str, gender: str, weight: str,
                       street: str, house_number: str, zip_code: str, city: str, email: str, phone: str) -> None:
@@ -295,7 +296,6 @@ class Database:
 
         _db_connection.commit()
         _logger.log(_current_user.username, "Created member", f"Member ID: {member_id}", False)
-
 
     @authorize(UserType.CONSULTANT)
     def update_member(self, member_id: int, first_name: str, last_name: str, age: str, gender: str, weight: str,
@@ -444,11 +444,10 @@ class Database:
         _db_connection.commit()
         _logger.log(_current_user.username, "Created user", f"username: {username}", False)
 
-
     @authorize(UserType.ADMIN)
     def delete_consultant(self, user_id: int) -> None:
         if self._get_user_from_id(user_id).type == UserType.CONSULTANT:
-            return self._delete_user( user_id)
+            return self._delete_user(user_id)
         self.errors.append("User is not a consultant.")
         _logger.log(_current_user.username, "Tried deleting a consultant",
                     "This user is not authorized to delete a consultant", True)
@@ -456,7 +455,7 @@ class Database:
     @authorize(UserType.SUPER_ADMIN)
     def delete_admin(self, user_id: int) -> None:
         if self._get_user_from_id(user_id).type == UserType.ADMIN:
-            return self._delete_user( user_id)
+            return self._delete_user(user_id)
         self.errors.append("User is not an admin.")
         _logger.log(_current_user.username, "Tried deleting an admin",
                     "This user is not authorized to delete an admin", True)
@@ -512,16 +511,15 @@ class Database:
         return None
 
     @authorize(UserType.ADMIN)
-    def reset_consultant_password(self, user_id:int, new_password: str) -> None:
+    def reset_consultant_password(self, user_id: int, new_password: str) -> None:
         if self._get_user_from_id(user_id).type == UserType.CONSULTANT:
             return self._reset_password(user_id, new_password)
         self.errors.append("User is not a consultant.")
         _logger.log(_current_user.username, "Tried resetting password",
                     "This user is not authorized to reset passwords of consultants", True)
 
-
     @authorize(UserType.SUPER_ADMIN)
-    def reset_admin_password(self, user_id:int, new_password: str) -> None:
+    def reset_admin_password(self, user_id: int, new_password: str) -> None:
         if self._get_user_from_id(user_id).type == UserType.ADMIN:
             return self._reset_password(user_id, new_password)
         self.errors.append("User is not an admin.")
@@ -549,7 +547,6 @@ class Database:
         _db_connection.commit()
         _logger.log(_current_user.username, 'Reset password', f'User ID: {user_id}', False)
 
-
     # =================== #
     #    BACKUP LOGIC     #
     # =================== #
@@ -561,7 +558,8 @@ class Database:
 
         try:
             _logger.log(_current_user.username, "Created backup", "", False)
-            with zipfile.ZipFile(f'{BACKUP_PATH}\\backup_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.zip', 'w') as zip:
+            with zipfile.ZipFile(
+                    f'{BACKUP_PATH}\\backup_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.zip', 'w') as zip:
                 zip.write(DB_PATH)
                 zip.write(LOGS_PATH)
         except Exception as e:
@@ -588,8 +586,6 @@ class Database:
         except Exception as e:
             self.errors.append("Failed to apply backup.")
             _logger.log(_current_user.username, "Failed to apply backup", str(e), True)
-
-
 
     # We keep track what the last time was that we viewed the log by just adding a hidden log to the top of the log list
     # With this we can differentiate between any log comming after/before the last time somem viewed the log
