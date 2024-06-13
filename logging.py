@@ -5,22 +5,23 @@ from encryption import decrypt_data, encrypt_data
 if __name__ == "__main__":
     raise SystemExit("This file is not meant to be run directly. Please run the main script called um_members.py")
 
+HIDDEN_LOG = "_hidden"
+
 
 class LogEntry:
-    def __init__(self, id, date, time, username, description, additional_info, suspicious):
-        self.id = id
-        self.date = date
-        self.time = time
-        self.username = username
-        self.description = description
-        self.additional_info = additional_info
-        self.suspicious = suspicious
-
+    def __init__(self, id: str|int, date: str, time: str, username: str,
+                 description: str, additional_info: str, suspicious: str):
+        self.id: int = int(id)
+        self.date: str = date
+        self.time: str = time
+        self.username: str = username
+        self.description: str = description
+        self.additional_info: str = additional_info
+        self.suspicious: str = suspicious
 
     def to_string(self) -> str:
         return (f"{self.id};{self.date};{self.time};{self.username};{self.description};"
                 f"{self.additional_info};{self.suspicious}")
-
 
     @classmethod
     def from_string(cls, string):
@@ -33,10 +34,13 @@ class Logger:
     It logs the date, time, username, description, additional info and if the action was suspicious or not.
     It also keeps track of the login attempts and password change attempts.
     """
+
     def __init__(self, path):
         self.path = path
         self.login_attempts = 0
         self.change_attempts = 0
+        logs = self.get_all_logs()
+        self.current_index = len(logs)
 
     def _get_logs(self) -> list[LogEntry]:
         logs = []
@@ -65,13 +69,39 @@ class Logger:
         username = username.replace(';', ' ')
         description = description.replace(';', ' ')
         additional_info = additional_info.replace(';', ' ')
-        logs = self._get_logs()
-        new_log = LogEntry(len(logs) + 1, str(datetime.now().date()), str(datetime.now().time().strftime("%H:%M:%S")),
+        self.current_index += 1
+        new_log = LogEntry(self.current_index, str(datetime.now().date()),
+                           str(datetime.now().time().strftime("%H:%M:%S")),
                            username, description, additional_info, suspicious)
         self._save_log(new_log)
 
+    def flag_logs_as_viewed(self):
+        hidden_log = LogEntry(self.current_index, str(datetime.now().date()),
+                              str(datetime.now().time().strftime("%H:%M:%S")), "...",
+                              HIDDEN_LOG, HIDDEN_LOG, False)
+        self._save_log(hidden_log)
+
+    def _get_lasted_viewed(self) -> LogEntry | None:
+        last_viewed = [log for log in self._get_logs() if log.description == HIDDEN_LOG]
+        if last_viewed:
+            return last_viewed[-1]
+        return None
+
+    def new_risk_detected(self) -> bool:
+        last_viewed = self._get_lasted_viewed()
+        if not last_viewed:
+            for log in self._get_logs():
+                if log.suspicious == "True":
+                    return True
+
+        for log in self._get_logs():
+            if log.id > last_viewed.id and log.suspicious == "True":
+                return True
+
+        return False
+
     def get_all_logs(self) -> list[LogEntry]:
-        return self._get_logs()
+        return [log for log in self._get_logs() if log.description != HIDDEN_LOG]
 
     def reset_fields(self) -> None:
         self.login_attempts = 0

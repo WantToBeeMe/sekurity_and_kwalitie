@@ -182,12 +182,13 @@ class Database:
         self.errors.append(f"Invalid username or password!")
         if _logger.login_attempts > 2:
             _logger.log("...", "Unsuccessful login",
-                        f"username: {username} is used for a login attempt wit a wrong "
-                        "password after more than 3 failed attempts",
+                        f"username: {username[0:20]}{'...' if len(username) > 20 else ''} "
+                        "is used for a login attempt with a wrong password after more than 3 failed attempts",
                         True)
         else:
             _logger.log("...", "Unsuccessful login",
-                        f"username: {username} is used for a login attempt wit a wrong password", False)
+                        f"username: {username[0:20]}{'...' if len(username) > 20 else ''} "
+                        "is used for a login attempt with a wrong password", False)
 
         _logger.login_attempts += 1
         return None
@@ -417,14 +418,14 @@ class Database:
                 self.errors.append("Password must be between 8 and 20 characters long and must contain at least one"
                                    " uppercase letter, one lowercase letter, one number, and one special character.")
             _logger.log(_current_user.username, "Failed to create user",
-                        f"username: {username} because of invalid input", False)
+                        "because of invalid input", False)
             return
 
         all_users = _get_all_users()
         if [user for user in all_users if user.username == username]:
             self.errors.append("A user with this username already exists.")
             _logger.log(_current_user.username, "Failed to create user",
-                        f"username: {username} because it already exists", False)
+                        "because user already exists", False)
             return  # user already exists
 
         _db_cursor.execute(
@@ -591,14 +592,10 @@ class Database:
     # With this we can differentiate between any log comming after/before the last time somem viewed the log
     @authorize(UserType.ADMIN)
     def get_logs(self) -> list[LogEntry]:
-        _logger.log(_current_user.username, "viewed logs", "", False)
-        return [log for log in _logger.get_all_logs() if log.description != "viewed logs"]
+        logs = _logger.get_all_logs()
+        _logger.flag_logs_as_viewed()
+        return logs
 
     @authorize(UserType.ADMIN)
     def log_risk_detected(self) -> bool:
-        latest_view = [log for log in _logger.get_all_logs() if log.description == "viewed logs"]
-        if not latest_view:
-            return any(log.suspicious == "True" for log in _logger.get_all_logs())
-        latest_view = latest_view[-1]
-
-        return any(log.suspicious == "True" for log in _logger.get_all_logs() if log.id > latest_view.id)
+        return _logger.new_risk_detected()

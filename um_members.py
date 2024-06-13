@@ -401,7 +401,7 @@ def view_logs() -> None:
     humanized_logs = []
     for log in reversed(logs):  # we want to start from the most recent log
         suspicious_text = f"{red}Risk{end}" if log.suspicious == "True" else f"{green}Safe{end}"
-        main_part = (f"{gray}{log.id.zfill(3)}{white}| {gray}{log.date} {log.time} {white}| "
+        main_part = (f"{gray}{str(log.id).zfill(3)}{white}| {gray}{log.date} {log.time} {white}| "
                      f"{log.username:<11.11}  {log.description:<30}{suspicious_text:>4}{end}")
         if log.additional_info:
             main_part += f"\n   |{'':>21}| {gray}{log.additional_info}{end}"
